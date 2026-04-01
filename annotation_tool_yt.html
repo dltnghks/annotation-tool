@@ -509,7 +509,8 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
 </div><!-- end #player -->
 
 <script>
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyRvDN62uyHXB_mBYDW5q-mONlcgnHLpgeAbwWoAMUZUXAJp46gT_ItSAoXwzgVfLEJ/exec';
+const WEBAPP_URL = '%%WEBAPP_URL%%';
+const SECRET_TOKEN = '%%SECRET_TOKEN%%';
 
 const TAGS = {
   GAME:  { color: '#2563eb', bg: '#dbeafe' },
@@ -557,6 +558,7 @@ async function sheetAdd(ann) {
       mode: 'no-cors',
       body: JSON.stringify({
         action: 'add',
+        token: SECRET_TOKEN,
         video_id: vid,
         timestamp_ms: Math.round(ann.time * 1000),
         tag: ann.tag,
@@ -579,6 +581,7 @@ async function sheetDelete(ann) {
       mode: 'no-cors',
       body: JSON.stringify({
         action: 'delete',
+        token: SECRET_TOKEN,
         video_id: vid,
         timestamp_ms: Math.round(ann.time * 1000),
         annotator_id: aid
@@ -604,7 +607,7 @@ async function startSession() {
   try {
     // 1. segments 로드
     loadingText.textContent = '영상 목록 불러오는 중...';
-    const segRes = await fetch(WEBAPP_URL + '?action=getSegments');
+    const segRes = await fetch(WEBAPP_URL + '?action=getSegments&token=' + SECRET_TOKEN);
     const segData = await segRes.json();
     if (segData.status !== 'ok') throw new Error('segments 로드 실패: ' + segData.message);
     videoList = seededShuffle(segData.data, aid);
@@ -612,7 +615,7 @@ async function startSession() {
 
     // 2. 기존 어노테이션 로드
     loadingText.textContent = '이전 작업 불러오는 중...';
-    const annRes = await fetch(WEBAPP_URL + '?action=getAnnotations&annotator_id=' + encodeURIComponent(aid));
+    const annRes = await fetch(WEBAPP_URL + '?action=getAnnotations&annotator_id=' + encodeURIComponent(aid) + '&token=' + SECRET_TOKEN);
     const annData = await annRes.json();
     if (annData.status !== 'ok') throw new Error('annotations 로드 실패: ' + annData.message);
 
