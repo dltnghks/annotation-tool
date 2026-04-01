@@ -340,9 +340,8 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
         <button class="nav-btn" onclick="nextVideo()" id="btnNext">다음 &rarr;</button>
       </div>
 
-      <div class="video-wrap" style="position:relative;">
-        <div id="ytplayer-a" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
-        <div id="ytplayer-b" style="position:absolute;top:0;left:0;width:100%;height:100%;visibility:hidden;"></div>
+      <div class="video-wrap">
+        <div id="ytplayer"></div>
       </div>
 
       <div class="controls">
@@ -512,11 +511,7 @@ let videoList = [];
 let currentIdx = 0;
 let allAnnotations = {};
 let pendingTime = null;
-let ytPlayer = null;    // 현재 활성 플레이어
-let ytPreload = null;   // 미리로드 플레이어
-let activeSlot = 'a';   // 현재 보이는 슬롯 ('a' or 'b')
-let preloadedIdx = -1;  // ytPreload에 로드된 영상 인덱스
-let ytReadyCount = 0;
+let ytPlayer = null;
 let ytReady = false;
 let timeInterval = null;
 let rates = [0.25, 0.5, 0.75, 1, 1.25, 1.5];
@@ -733,72 +728,18 @@ var tag = document.createElement('script');
 tag.src = 'https://www.youtube.com/iframe_api';
 document.head.appendChild(tag);
 
-function makePlayerVars() {
-  return { controls: 0, modestbranding: 1, rel: 0, fs: 0, disablekb: 1 };
-}
-
-function onBothReady() {
-  ytReadyCount++;
-  if (ytReadyCount >= 2) ytReady = true;
-}
-
 window.onYouTubeIframeAPIReady = function() {
-  const playerA = new YT.Player('ytplayer-a', {
-    playerVars: makePlayerVars(),
+  ytPlayer = new YT.Player('ytplayer', {
+    playerVars: { controls: 0, modestbranding: 1, rel: 0, fs: 0, disablekb: 1 },
     events: {
-      onReady: function() { onBothReady(); },
+      onReady: function() { ytReady = true; },
       onStateChange: function(e) {
-        if (playerA !== ytPlayer) return;
         updatePlayBtn();
         if (e.data === YT.PlayerState.PLAYING) enforceRange();
       }
     }
   });
-  const playerB = new YT.Player('ytplayer-b', {
-    playerVars: makePlayerVars(),
-    events: {
-      onReady: function() { onBothReady(); },
-      onStateChange: function(e) {
-        if (playerB !== ytPlayer) return;
-        updatePlayBtn();
-        if (e.data === YT.PlayerState.PLAYING) enforceRange();
-      }
-    }
-  });
-  ytPlayer = playerA;
-  ytPreload = playerB;
-  activeSlot = 'a';
 };
-
-function swapToPreload(youtubeId, start, end) {
-  // 미리로드된 플레이어로 전환
-  const preSlot = activeSlot === 'a' ? 'b' : 'a';
-  document.getElementById('ytplayer-' + activeSlot).style.visibility = 'hidden';
-  document.getElementById('ytplayer-' + preSlot).style.visibility = 'visible';
-
-  const tmp = ytPlayer;
-  ytPlayer = ytPreload;
-  ytPreload = tmp;
-  activeSlot = preSlot;
-
-  ytPlayer.seekTo(start, true);
-  ytPlayer.pauseVideo();
-  ytPlayer.setPlaybackRate(rates[rateIdx]);
-}
-
-function schedulePreload(nextIdx) {
-  if (nextIdx >= videoList.length || !ytPreload) return;
-  if (preloadedIdx === nextIdx) return; // 이미 로드됨
-  const v = videoList[nextIdx];
-  preloadedIdx = nextIdx;
-  setTimeout(function() {
-    ytPreload.loadVideoById({ videoId: v.youtube_id, startSeconds: v.start });
-    ytPreload.playVideo(); // 광고 백그라운드 소화
-    setTimeout(function() {
-      if (preloadedIdx === nextIdx) ytPreload.pauseVideo();
-    }, 10000); // 10초 후 정지 (광고 최대 소화)
-  }, 1500);
-}
 
 function createPlayer(youtubeId, start, end) {
   if (timeInterval) { clearInterval(timeInterval); timeInterval = null; }
@@ -1034,15 +975,7 @@ function loadVideo(idx) {
   document.getElementById('btnRate').innerHTML = '1x <kbd>R</kbd>';
   document.getElementById('btnRate').classList.remove('active');
 
-  if (preloadedIdx === idx) {
-    // 미리로드된 플레이어로 스왑
-    swapToPreload(v.youtube_id, v.start, v.end);
-    updateTimeDisplay();
-    startTimeUpdate();
-  } else {
-    createPlayer(v.youtube_id, v.start, v.end);
-  }
-  schedulePreload(idx + 1);
+  createPlayer(v.youtube_id, v.start, v.end);
   renderAnnotations();
   renderProgressMarkers();
 }
