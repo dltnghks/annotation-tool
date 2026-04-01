@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Video Annotation Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'IBM Plex Sans', 'Noto Sans KR', sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px 20px; color: #1a1a2e; background: #fff; }
+h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; text-align: center; }
+.subtitle { font-size: 13px; color: #666; text-align: center; margin: 4px 0 20px; }
+
+/* ── Pre-load: single column ── */
+.setup-row { display: flex; gap: 12px; margin-bottom: 16px; }
+.setup-row > div { flex: 1; }
+.setup-row label { font-size: 12px; font-weight: 500; color: #666; display: block; margin-bottom: 4px; }
+.setup-row input { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: 'IBM Plex Mono', monospace; }
+
+.dropzone { border: 2px dashed #ccc; border-radius: 12px; padding: 48px 24px; text-align: center; cursor: pointer; background: #fafafa; transition: border-color 0.2s; }
+.dropzone:hover { border-color: #888; }
+.dropzone .plus { font-size: 36px; margin-bottom: 8px; color: #999; }
+.dropzone .main { font-size: 15px; font-weight: 500; color: #444; }
+.dropzone .sub { font-size: 13px; color: #999; margin-top: 4px; }
+.dropzone .format { font-size: 11px; color: #bbb; margin-top: 12px; font-family: 'IBM Plex Mono', monospace; text-align: left; display: inline-block; background: #f0f0f0; padding: 8px 12px; border-radius: 6px; line-height: 1.6; }
+
+/* Quickstart (pre-load) */
+.quickstart-pre { margin-top: 20px; background: #f0f4f8; border-radius: 12px; padding: 18px 20px; }
+.quickstart-pre h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #1a1a2e; }
+.qs-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.qs-step { background: #fff; border-radius: 8px; padding: 10px 12px; border: 1px solid #e5e7eb; }
+.qs-step .step-num { font-size: 11px; font-weight: 600; color: #2563eb; margin-bottom: 4px; }
+.qs-step .step-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.qs-step .step-desc { font-size: 12px; color: #666; line-height: 1.5; }
+.qs-step kbd { font-size: 11px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 3px; padding: 1px 5px; font-family: 'IBM Plex Mono', monospace; }
+
+/* Criteria shared */
+.qs-section-title { font-size: 11px; font-weight: 700; color: #888; letter-spacing: 0.06em; text-transform: uppercase; margin: 16px 0 8px; }
+.qs-questions { display: flex; flex-direction: column; gap: 6px; }
+.qs-q { display: flex; gap: 10px; align-items: flex-start; background: #fff; border-radius: 8px; padding: 9px 12px; border: 1px solid #e5e7eb; }
+.qs-q .q-badge { font-size: 10px; font-weight: 700; color: #fff; background: #374151; border-radius: 4px; padding: 2px 6px; flex-shrink: 0; margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+.qs-q .q-body strong { font-size: 13px; display: block; margin-bottom: 2px; }
+.qs-q .q-body span { font-size: 11px; color: #888; line-height: 1.5; }
+.qs-q.pass .q-badge { background: #ef4444; }
+.qs-pass-note { font-size: 11px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 6px 10px; color: #166534; margin-top: 6px; line-height: 1.5; }
+.qs-tags { display: flex; gap: 8px; }
+.qs-tag-card { flex: 1; border-radius: 8px; padding: 9px 12px; border: 2px solid; background: #fff; }
+.qs-tag-card .tag-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.qs-tag-card .tag-crit { font-size: 11px; color: #444; line-height: 1.5; }
+.qs-tip { margin-top: 8px; font-size: 11px; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 6px; padding: 7px 10px; color: #92400e; line-height: 1.5; }
+.qs-ex { display: flex; gap: 8px; }
+.qs-ex-col { flex: 1; background: #fff; border-radius: 8px; border: 1px solid #e5e7eb; padding: 9px 12px; }
+.qs-ex-col .ex-head { font-size: 11px; font-weight: 700; margin-bottom: 5px; }
+.qs-ex-col ul { list-style: none; padding: 0; }
+.qs-ex-col ul li { font-size: 11px; color: #555; line-height: 1.65; padding-left: 10px; position: relative; }
+.qs-ex-col ul li::before { content: '•'; position: absolute; left: 0; color: #aaa; }
+
+/* ── Player layout: two-column ── */
+.player-layout { display: flex; gap: 16px; align-items: flex-start; }
+.player-left { flex: 0 0 62%; min-width: 0; }
+.player-right { flex: 1; min-width: 0; }
+
+/* Video nav */
+.video-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; background: #f0f4f8; border-radius: 8px; padding: 10px 14px; }
+.video-nav .nav-btn { padding: 6px 12px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer; font-size: 13px; font-family: inherit; }
+.video-nav .nav-btn:hover { background: #e8e8e8; }
+.video-nav .nav-btn:disabled { opacity: 0.3; cursor: default; }
+.video-nav .nav-info { flex: 1; text-align: center; font-size: 14px; font-weight: 500; }
+.video-nav .nav-id { font-family: 'IBM Plex Mono', monospace; color: #2563eb; }
+.video-nav .nav-range { font-size: 12px; color: #888; margin-left: 8px; }
+
+/* Video wrap — 16:9 fixed */
+.video-wrap { position: relative; width: 100%; background: #000; border-radius: 10px; overflow: hidden; aspect-ratio: 16 / 9; margin-bottom: 10px; }
+.video-wrap iframe,
+.video-wrap #ytplayer { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; border: none; }
+
+/* Controls */
+.controls { background: #f8f8fa; border-radius: 10px; padding: 12px 16px; }
+.time-display { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.time-current { font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 500; }
+.time-total { font-size: 13px; color: #999; }
+.time-range { font-size: 12px; color: #2563eb; font-family: 'IBM Plex Mono', monospace; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 13px; font-family: inherit; }
+.btn:hover { background: #f0f0f0; }
+.btn-play { background: #e0f2fe; }
+.btn-play.playing { background: #fee2e2; }
+.btn-mark { padding: 6px 16px; border-radius: 6px; border: none; background: #1a1a2e; color: #fff; cursor: pointer; font-size: 13px; font-weight: 600; margin-left: auto; font-family: inherit; }
+.btn-mark:hover { background: #2d2d4e; }
+.btn-rate { font-family: 'IBM Plex Mono', monospace; }
+.btn-rate.active { background: #fef3c7; }
+kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mono', monospace; background: #f0f0f0; padding: 1px 4px; border-radius: 2px; }
+.progress-bar { width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; margin-bottom: 8px; cursor: pointer; position: relative; }
+.progress-fill { height: 100%; background: #2563eb; border-radius: 3px; transition: width 0.1s; }
+.progress-markers { position: absolute; top: -3px; left: 0; right: 0; height: 12px; pointer-events: none; }
+.progress-marker { position: absolute; width: 3px; height: 12px; border-radius: 1px; top: 0; transform: translateX(-1px); }
+
+/* Right panel sections */
+.panel-section { background: #f8f8fa; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+
+/* Pending */
+.pending { border: 2px solid #f59e0b; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; background: #fffbeb; animation: fadeIn 0.15s ease; }
+.pending-label { font-size: 13px; font-weight: 500; color: #92400e; margin-bottom: 8px; }
+.pending-time { font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; }
+.tag-row { display: flex; gap: 8px; }
+.tag-btn { flex: 1; padding: 10px 8px; border-radius: 8px; cursor: pointer; text-align: center; background: none; font-family: inherit; }
+.tag-btn:hover { filter: brightness(0.95); }
+.tag-btn .name { font-size: 14px; font-weight: 600; }
+.tag-btn .desc { font-size: 11px; color: #666; margin-top: 2px; }
+.tag-cancel { padding: 10px 14px; border-radius: 8px; border: 1px solid #ddd; background: #f5f5f5; cursor: pointer; font-size: 12px; color: #999; font-family: inherit; }
+
+/* Annotations */
+.ann-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ann-header h3 { font-size: 15px; font-weight: 600; }
+.btn-export { padding: 5px 12px; border-radius: 6px; border: 1px solid #059669; background: #d1fae5; color: #065f46; cursor: pointer; font-size: 12px; font-weight: 500; font-family: inherit; }
+.btn-export:hover { background: #a7f3d0; }
+.btn-export-all { padding: 5px 12px; border-radius: 6px; border: 1px solid #2563eb; background: #dbeafe; color: #1e40af; cursor: pointer; font-size: 12px; font-weight: 500; font-family: inherit; margin-left: 6px; }
+.btn-export-all:hover { background: #bfdbfe; }
+.ann-empty { padding: 20px 12px; text-align: center; color: #aaa; font-size: 13px; background: #fafafa; border-radius: 8px; }
+.ann-list-wrap { max-height: 260px; overflow-y: auto; }
+.ann-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; }
+.ann-item:nth-child(odd) { background: #fafafa; }
+.ann-time { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500; min-width: 60px; cursor: pointer; color: #2563eb; text-decoration: underline; text-decoration-color: #bfdbfe; }
+.ann-time:hover { color: #1d4ed8; }
+.ann-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.ann-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 15px; padding: 0 4px; line-height: 1; margin-left: auto; }
+.ann-del:hover { color: #ef4444; }
+
+/* Quickstart (in-player, collapsible) */
+.qs-toggle { width: 100%; display: flex; justify-content: space-between; align-items: center; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 600; padding: 0; color: #1a1a2e; }
+.qs-toggle .arrow { font-size: 11px; color: #888; transition: transform 0.2s; }
+.qs-toggle.open .arrow { transform: rotate(180deg); }
+.qs-body { margin-top: 10px; }
+.qs-body .qs-steps { display: flex; flex-direction: column; gap: 8px; }
+.qs-body .qs-step { background: #fff; border-radius: 8px; padding: 8px 12px; border: 1px solid #e5e7eb; }
+
+/* Shortcuts */
+.shortcuts { font-size: 12px; color: #555; line-height: 1.9; }
+.shortcuts kbd { background: #fff; padding: 1px 6px; border-radius: 3px; border: 1px solid #ddd; font-size: 11px; }
+
+/* ── Loading overlay ── */
+.loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.85); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.loading-spinner { width: 36px; height: 36px; border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.7s linear infinite; }
+.loading-text { font-size: 14px; color: #555; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Save indicator ── */
+.save-indicator { font-size: 11px; font-family: 'IBM Plex Mono', monospace; margin-left: 8px; }
+.save-indicator.saving { color: #aaa; }
+.save-indicator.saved { color: #059669; }
+.save-indicator.error { color: #ef4444; }
+
+/* ── Start form ── */
+.start-form { max-width: 360px; margin: 40px auto 0; }
+.start-form label { font-size: 12px; font-weight: 500; color: #666; display: block; margin-bottom: 6px; }
+.start-form input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; font-family: 'IBM Plex Mono', monospace; margin-bottom: 12px; }
+.start-form input:focus { outline: none; border-color: #2563eb; }
+.btn-launch { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #1a1a2e; color: #fff; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; }
+.btn-launch:hover { background: #2d2d4e; }
+.start-error { font-size: 12px; color: #ef4444; margin-top: 8px; min-height: 16px; }
+
+/* ── Nav progress ── */
+.nav-progress { font-size: 11px; color: #059669; font-weight: 600; margin-left: 6px; }
+
+/* ── Guide modal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(15,15,30,0.6); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.modal { background: #fff; border-radius: 16px; width: 92%; max-width: 740px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+.modal-header { padding: 22px 26px 16px; border-bottom: 1px solid #e5e7eb; flex-shrink: 0; }
+.modal-header h2 { font-size: 18px; font-weight: 600; }
+.modal-header p { font-size: 13px; color: #666; margin-top: 4px; }
+.modal-body { flex: 1; overflow-y: auto; padding: 20px 26px; }
+.modal-footer { padding: 14px 26px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; background: #fafafa; border-radius: 0 0 16px 16px; }
+.modal-hint { font-size: 12px; color: #aaa; transition: opacity 0.3s; }
+.btn-start { padding: 10px 28px; border-radius: 8px; border: none; background: #1a1a2e; color: #fff; cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit; transition: background 0.2s, opacity 0.2s; }
+.btn-start:disabled { opacity: 0.3; cursor: default; }
+.btn-start:not(:disabled):hover { background: #2d2d4e; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.hidden { display: none; }
+
+/* Responsive: collapse to single column on small screens */
+@media (max-width: 800px) {
+  .player-layout { flex-direction: column; }
+  .player-left, .player-right { flex: none; width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Guide modal ── -->
+<div id="guideModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>어노테이터 가이드</h2>
+      <p>작업 전 반드시 읽어주세요. 끝까지 스크롤하면 시작할 수 있습니다.</p>
+    </div>
+    <div class="modal-body" id="modalBody">
+
+      <!-- 절차 -->
+      <div class="qs-section-title">작업 절차</div>
+      <div class="qs-steps">
+        <div class="qs-step">
+          <div class="step-num">STEP 1</div>
+          <div class="step-title">JSON 파일 업로드</div>
+          <div class="step-desc">video_id, youtube_id, start, end가 담긴 JSON 배열 파일을 선택합니다.</div>
+        </div>
+        <div class="qs-step">
+          <div class="step-num">STEP 2</div>
+          <div class="step-title">경계 표시</div>
+          <div class="step-desc">경계 지점에서 <kbd>M</kbd> — 영상 정지 후 태그 창 표시<br><kbd>Space</kbd> 재생/정지 &middot; <kbd>←</kbd><kbd>→</kbd> 2초 이동 &middot; <kbd>R</kbd> 속도</div>
+        </div>
+        <div class="qs-step">
+          <div class="step-num">STEP 3</div>
+          <div class="step-title">검토</div>
+          <div class="step-desc">타임스탬프 클릭으로 해당 시점 이동. 불확실하거나 중복된 경계는 × 로 삭제합니다.</div>
+        </div>
+        <div class="qs-step">
+          <div class="step-num">STEP 4</div>
+          <div class="step-title">내보내기</div>
+          <div class="step-desc">모든 영상 완료 후 <strong>전체 CSV</strong> 버튼으로 저장하여 제출합니다.</div>
+        </div>
+      </div>
+
+      <!-- 경계 판단 기준 -->
+      <div class="qs-section-title">경계 판단 기준 — 3단계 질문</div>
+      <p style="font-size:12px;color:#666;margin-bottom:8px;">경계는 <strong>게임 세계의 상태가 의미 있게 전환되는 시점</strong>입니다. 아래 질문 중 하나라도 해당되면 경계가 아닙니다.</p>
+      <div class="qs-questions">
+        <div class="qs-q pass">
+          <div class="q-badge">Q1</div>
+          <div class="q-body">
+            <strong>게임 상태가 변화하지 않았는가?</strong>
+            <span>플레이어 조작이 아니라 게임 자체 상태가 달라져야 합니다.<br>게임 상태의 변화란 게임 시스템이 플레이어에게 무엇을 요구하는가가 바뀌는 것을 말합니다.</span>
+          </div>
+        </div>
+        <div class="qs-q pass">
+          <div class="q-badge">Q2</div>
+          <div class="q-body">
+            <strong>동일 상태 내의 미시 이벤트인가?</strong>
+            <span>같은 상태 안에서 반복되는 작은 이벤트는 경계가 아닙니다.<br>예: 전투 중 개별 타격, 탐색 중 채집</span>
+          </div>
+        </div>
+        <div class="qs-q pass">
+          <div class="q-badge">Q3</div>
+          <div class="q-body">
+            <strong>플레이어 측 행위에 불과한가?</strong>
+            <span>UI 열기, 메뉴 조작, 인벤토리·지도·설정 등은 경계가 아닙니다.</span>
+          </div>
+        </div>
+      </div>
+      <div class="qs-pass-note">세 질문을 모두 <strong>통과</strong>하면 경계로 표시하고, 오디오 동반 여부에 따라 태그를 선택합니다.</div>
+
+      <!-- 태그 기준 -->
+      <div class="qs-section-title">태그 선택 기준</div>
+      <div class="qs-tags">
+        <div class="qs-tag-card" style="border-color:#2563eb;">
+          <div class="tag-name" style="color:#2563eb;"><kbd style="font-size:12px;background:#dbeafe;border-color:#93c5fd;color:#1e40af;">1</kbd> GAME</div>
+          <div class="tag-crit">게임 이벤트 발생, 오디오 변화 없거나 미미<br><em>예: 위험 지역 진입(오디오 변화 없음)</em></div>
+        </div>
+        <div class="qs-tag-card" style="border-color:#059669;">
+          <div class="tag-name" style="color:#059669;"><kbd style="font-size:12px;background:#d1fae5;border-color:#6ee7b7;color:#065f46;">2</kbd> BOTH</div>
+          <div class="tag-crit">게임 이벤트 + 오디오 변화 동반<br><em>예: 전투 시작 시 소리 변화, 컷씬 진입 시 소리 변화</em></div>
+        </div>
+      </div>
+      <div class="qs-tip">오디오는 BGM·SFX·SPEECH 모두 포함. 소리가 새로 생기거나 사라지는 것 모두 변화입니다.<br>애매하면 <strong>BOTH</strong>를 선택하세요.</div>
+
+      <!-- 판단 예시 -->
+      <div class="qs-section-title">판단 예시</div>
+      <div class="qs-ex">
+        <div class="qs-ex-col">
+          <div class="ex-head" style="color:#059669;">✓ 경계 표시</div>
+          <ul>
+            <li>전투 시작 / 종료 후 탐색 복귀</li>
+            <li>컷씬·대화 진입 / 종료</li>
+            <li>보스 페이즈 전환</li>
+            <li>새 지역·스테이지 진입</li>
+            <li>로딩 화면 진입 / 종료</li>
+          </ul>
+        </div>
+        <div class="qs-ex-col">
+          <div class="ex-head" style="color:#ef4444;">✗ 경계 아님</div>
+          <ul>
+            <li>전투 중 개별 타격·스킬 사용</li>
+            <li>탐색 중 아이템 채집</li>
+            <li>인벤토리·스킬창·지도 열기</li>
+            <li>장비 교체·스킬 포인트 투자</li>
+            <li>카메라 이동 (맥락 변화 없음)</li>
+            <li>BGM만 서서히 변화 (화면 변화 없음)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 주의사항 -->
+      <div class="qs-section-title">주의사항</div>
+      <div class="qs-tip" style="background:#f0f4f8;border-color:#93c5fd;color:#1e3a5f;">
+        영상과 <strong>오디오를 함께</strong> 시청하며 <strong>게임 이벤트 기준</strong>으로 경계를 표시하세요.<br>
+        순수한 오디오 변화만 있고 게임 이벤트가 없으면 경계로 표시하지 않습니다.<br>
+        영상 전체에 걸쳐 <strong>동일한 기준</strong>을 적용하세요. 일관성이 가장 중요합니다.<br>
+        <strong>이벤트 전환이 시작되는 시점</strong>을 표시합니다 (종료 시점 아님). 애매한 경우엔 표시하세요.
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <span class="modal-hint" id="modalHint">끝까지 스크롤해 주세요 ↓</span>
+      <button class="btn-start" id="btnStart" disabled onclick="closeModal()">확인 후 시작하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Loading overlay ── -->
+<div id="loadingOverlay" class="loading-overlay hidden">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">불러오는 중...</div>
+</div>
+
+<h1>Game Video Annotation Tool</h1>
+<p class="subtitle">Event Boundary Detection Dataset</p>
+
+<!-- ── Pre-load area ── -->
+<div id="preload">
+  <div class="start-form">
+    <label>Annotator ID</label>
+    <input id="annotatorId" placeholder="A1" onkeydown="if(event.key==='Enter')startSession()">
+    <button class="btn-launch" onclick="startSession()">시작하기</button>
+    <div class="start-error" id="startError"></div>
+  </div>
+</div>
+
+<!-- ── Player area ── -->
+<div id="player" class="hidden">
+
+  <!-- Annotator ID + save status -->
+  <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+    <label style="font-size:12px;font-weight:500;color:#666;">Annotator ID</label>
+    <input id="annotatorIdPlayer" style="width:120px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:'IBM Plex Mono',monospace;" placeholder="A1" readonly>
+    <span id="saveIndicator" class="save-indicator"></span>
+  </div>
+
+  <div class="player-layout">
+
+    <!-- ── LEFT: Video + playback controls ── -->
+    <div class="player-left">
+      <div id="videoNav" class="video-nav">
+        <button class="nav-btn" onclick="prevVideo()" id="btnPrev">&larr; 이전</button>
+        <div class="nav-info">
+          <span id="navIdx">1/1</span>
+          <span id="navId" class="nav-id"></span>
+          <span id="navRange" class="nav-range"></span>
+          <span id="navProgress" class="nav-progress"></span>
+        </div>
+        <button class="nav-btn" onclick="nextVideo()" id="btnNext">다음 &rarr;</button>
+      </div>
+
+      <div class="video-wrap">
+        <div id="ytplayer"></div>
+      </div>
+
+      <div class="controls">
+        <div class="time-display">
+          <span id="timeCurrent" class="time-current">00:00.0</span>
+          <span>
+            <span id="timeRange" class="time-range"></span>
+            <span id="timeTotal" class="time-total"></span>
+          </span>
+        </div>
+        <div id="progressBar" class="progress-bar" onclick="seekProgress(event)">
+          <div id="progressFill" class="progress-fill" style="width:0%"></div>
+          <div id="progressMarkers" class="progress-markers"></div>
+        </div>
+        <div class="btn-row">
+          <button id="btnPlay" class="btn btn-play" onclick="togglePlay()">Play <kbd>Space</kbd></button>
+          <button class="btn" onclick="seekRel(-2)">-2s <kbd>&larr;</kbd></button>
+          <button class="btn" onclick="seekRel(2)">+2s <kbd>&rarr;</kbd></button>
+          <button id="btnRate" class="btn btn-rate" onclick="changeRate()">1x <kbd>R</kbd></button>
+          <button class="btn-mark" onclick="markTimestamp()">Mark <kbd>M</kbd></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT: Pending / Annotations / Quickstart ── -->
+    <div class="player-right">
+
+      <!-- Pending tag selection -->
+      <div id="pendingBox" class="pending hidden">
+        <div class="pending-label">경계를 표시할 시점: <span id="pendingTime" class="pending-time"></span></div>
+        <div class="tag-row">
+          <button class="tag-btn" style="border:2px solid #2563eb; background:#dbeafe" onclick="confirmTag('GAME')">
+            <div class="name" style="color:#2563eb">GAME</div>
+            <div class="desc">오디오 변화 없거나 미미</div>
+            <kbd>1</kbd>
+          </button>
+          <button class="tag-btn" style="border:2px solid #059669; background:#d1fae5" onclick="confirmTag('BOTH')">
+            <div class="name" style="color:#059669">BOTH</div>
+            <div class="desc">오디오 변화 동반</div>
+            <kbd>2</kbd>
+          </button>
+          <button class="tag-cancel" onclick="cancelPending()">취소<br><kbd>Esc</kbd></button>
+        </div>
+      </div>
+
+      <!-- Annotations list -->
+      <div class="panel-section">
+        <div class="ann-header">
+          <h3>Annotations (<span id="annCount">0</span>)</h3>
+          <div>
+            <button id="btnExport" class="btn-export hidden" onclick="exportCSV()">이 영상 CSV</button>
+            <button id="btnExportAll" class="btn-export-all hidden" onclick="exportAllCSV()">전체 CSV</button>
+          </div>
+        </div>
+        <div class="ann-list-wrap">
+          <div id="annList">
+            <div class="ann-empty">영상을 재생하고 M 키로 경계를 표시하세요</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shortcuts -->
+      <div class="panel-section">
+        <div class="shortcuts">
+          <strong>단축키</strong><br>
+          <kbd>Space</kbd> 재생/정지 &middot;
+          <kbd>M</kbd> 경계 표시 &middot;
+          <kbd>1</kbd><kbd>2</kbd> 태그 선택 &middot;
+          <kbd>&larr;</kbd><kbd>&rarr;</kbd> 2초 이동 &middot;
+          <kbd>R</kbd> 재생속도 &middot;
+          <kbd>N</kbd> 다음 영상 &middot;
+          <kbd>P</kbd> 이전 영상 &middot;
+          <kbd>Esc</kbd> 취소
+        </div>
+      </div>
+
+      <!-- Quickstart (collapsible) -->
+      <div class="panel-section">
+        <button class="qs-toggle" id="qsToggle" onclick="toggleQS()">
+          <span>판단 기준 참고</span>
+          <span class="arrow" id="qsArrow">&#9660;</span>
+        </button>
+        <div class="qs-body hidden" id="qsBody">
+
+          <!-- 3단계 질문 -->
+          <div class="qs-section-title" style="margin-top:10px;">경계 판단 — 3단계 질문</div>
+          <div class="qs-questions">
+            <div class="qs-q pass">
+              <div class="q-badge">Q1</div>
+              <div class="q-body">
+                <strong>게임 상태가 변화하지 않았는가?</strong>
+                <span>게임 시스템이 플레이어에게 무엇을 요구하는가가 바뀌는 시점인가?</span>
+              </div>
+            </div>
+            <div class="qs-q pass">
+              <div class="q-badge">Q2</div>
+              <div class="q-body">
+                <strong>동일 상태 내 미시 이벤트인가?</strong>
+                <span>전투 중 타격, 탐색 중 채집 등</span>
+              </div>
+            </div>
+            <div class="qs-q pass">
+              <div class="q-badge">Q3</div>
+              <div class="q-body">
+                <strong>플레이어 측 행위인가?</strong>
+                <span>인벤토리·지도·메뉴 열기 등</span>
+              </div>
+            </div>
+          </div>
+          <div class="qs-pass-note">세 질문 모두 통과 → 경계 표시 후 태그 선택</div>
+
+          <!-- 태그 기준 -->
+          <div class="qs-section-title">태그 선택</div>
+          <div class="qs-tags">
+            <div class="qs-tag-card" style="border-color:#2563eb;">
+              <div class="tag-name" style="color:#2563eb;font-size:13px;"><kbd style="font-size:11px;background:#dbeafe;border-color:#93c5fd;color:#1e40af;">1</kbd> GAME</div>
+              <div class="tag-crit">게임 이벤트, 오디오 미미</div>
+            </div>
+            <div class="qs-tag-card" style="border-color:#059669;">
+              <div class="tag-name" style="color:#059669;font-size:13px;"><kbd style="font-size:11px;background:#d1fae5;border-color:#6ee7b7;color:#065f46;">2</kbd> BOTH</div>
+              <div class="tag-crit">게임 이벤트 + 오디오 변화</div>
+            </div>
+          </div>
+          <div class="qs-tip">오디오 변화 = 소리가 새로 생기거나 사라지는 것 (BGM·SFX·SPEECH 모두 포함). 애매하면 <strong>BOTH</strong>.</div>
+
+          <!-- 예시 -->
+          <div class="qs-section-title">빠른 예시</div>
+          <div class="qs-ex">
+            <div class="qs-ex-col">
+              <div class="ex-head" style="color:#059669;">✓ 경계</div>
+              <ul>
+                <li>전투 시작 / 종료 후 복귀</li>
+                <li>컷씬 진입 / 종료</li>
+                <li>보스 페이즈 전환</li>
+                <li>새 지역·스테이지 진입</li>
+                <li>로딩 화면 진입 / 종료</li>
+              </ul>
+            </div>
+            <div class="qs-ex-col">
+              <div class="ex-head" style="color:#ef4444;">✗ 아님</div>
+              <ul>
+                <li>전투 중 타격·스킬</li>
+                <li>아이템 채집</li>
+                <li>인벤토리·지도 열기</li>
+                <li>BGM만 변화</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- end player-right -->
+  </div><!-- end player-layout -->
+</div><!-- end #player -->
+
+<script>
+const WEBAPP_URL = '';
+const SECRET_TOKEN = '';
+
+const TAGS = {
+  GAME:  { color: '#2563eb', bg: '#dbeafe' },
+  BOTH:  { color: '#059669', bg: '#d1fae5' },
+};
+
+let videoList = [];
+let currentIdx = 0;
+let allAnnotations = {};
+let pendingTime = null;
+let ytPlayer = null;
+let ytReady = false;
+let timeInterval = null;
+let rates = [0.25, 0.5, 0.75, 1, 1.25, 1.5];
+let rateIdx = 3;
+
+// ── Seeded shuffle (annotator ID → 같은 순서 보장) ──
+function seededShuffle(arr, seed) {
+  let s = [...String(seed)].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const rand = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 0x100000000; };
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── Device identification ──
+function getDeviceId() {
+  let id = localStorage.getItem('annotation_device_id');
+  if (!id) {
+    id = 'dev-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+    localStorage.setItem('annotation_device_id', id);
+  }
+  return id;
+}
+
+function getDeviceFingerprint() {
+  const raw = [
+    navigator.language,
+    navigator.platform,
+    navigator.hardwareConcurrency || 0,
+    screen.width + 'x' + screen.height,
+    screen.colorDepth,
+    new Date().getTimezoneOffset(),
+  ].join('|');
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    hash = Math.imul(31, hash) + raw.charCodeAt(i) | 0;
+  }
+  return 'fp-' + Math.abs(hash).toString(16);
+}
+
+// ── Google Sheets 연동 ──
+function updateSaveStatus(state, time) {
+  const el = document.getElementById('saveIndicator');
+  el.className = 'save-indicator ' + state;
+  if (state === 'saving') el.textContent = '저장 중...';
+  else if (state === 'saved') el.textContent = '저장됨 ' + (time || new Date().toLocaleTimeString('ko-KR'));
+  else if (state === 'error') el.textContent = '저장 실패 ⚠';
+}
+
+async function sheetAdd(ann) {
+  const vid = currentVideo()?.video_id;
+  const aid = getAnnotatorId();
+  updateSaveStatus('saving');
+  try {
+    await fetch(WEBAPP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({
+        action: 'add',
+        token: SECRET_TOKEN,
+        video_id: vid,
+        timestamp_ms: Math.round(ann.time * 1000),
+        tag: ann.tag,
+        annotator_id: aid,
+        device_id: getDeviceId(),
+        device_fp: getDeviceFingerprint()
+      })
+    });
+    updateSaveStatus('saved');
+  } catch(e) {
+    updateSaveStatus('error');
+  }
+}
+
+async function sheetDelete(ann) {
+  const vid = currentVideo()?.video_id;
+  const aid = getAnnotatorId();
+  updateSaveStatus('saving');
+  try {
+    await fetch(WEBAPP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({
+        action: 'delete',
+        token: SECRET_TOKEN,
+        video_id: vid,
+        timestamp_ms: Math.round(ann.time * 1000),
+        annotator_id: aid
+      })
+    });
+    updateSaveStatus('saved');
+  } catch(e) {
+    updateSaveStatus('error');
+  }
+}
+
+// ── 세션 시작 ──
+async function startSession() {
+  const aid = document.getElementById('annotatorId').value.trim();
+  const errEl = document.getElementById('startError');
+  if (!aid) { errEl.textContent = 'Annotator ID를 입력하세요.'; return; }
+  errEl.textContent = '';
+
+  const overlay = document.getElementById('loadingOverlay');
+  const loadingText = document.getElementById('loadingText');
+  overlay.classList.remove('hidden');
+
+  try {
+    // 1. segments 로드
+    loadingText.textContent = '영상 목록 불러오는 중...';
+    const segRes = await fetch(WEBAPP_URL + '?action=getSegments&token=' + SECRET_TOKEN);
+    const segData = await segRes.json();
+    if (segData.status !== 'ok') throw new Error('segments 로드 실패: ' + segData.message);
+    videoList = seededShuffle(segData.data, aid);
+    videoList = videoList.map(v => ({ ...v, start: Number(v.start), end: Number(v.end) }));
+
+    // 2. 기존 어노테이션 로드
+    loadingText.textContent = '이전 작업 불러오는 중...';
+    const annRes = await fetch(WEBAPP_URL + '?action=getAnnotations&annotator_id=' + encodeURIComponent(aid) + '&token=' + SECRET_TOKEN);
+    const annData = await annRes.json();
+    if (annData.status !== 'ok') throw new Error('annotations 로드 실패: ' + annData.message);
+
+    allAnnotations = {};
+    annData.data.forEach(row => {
+      const vid = String(row.video_id);
+      if (!allAnnotations[vid]) allAnnotations[vid] = [];
+      allAnnotations[vid].push({
+        time: Number(row.timestamp_ms) / 1000,
+        tag: row.tag,
+        id: Number(row.timestamp_ms)
+      });
+    });
+    Object.keys(allAnnotations).forEach(vid => {
+      allAnnotations[vid].sort((a, b) => a.time - b.time);
+    });
+
+    // 3. 플레이어 표시
+    document.getElementById('annotatorIdPlayer').value = aid;
+    document.getElementById('preload').classList.add('hidden');
+    document.getElementById('player').classList.remove('hidden');
+
+    // 4. 미완료 영상부터 시작
+    const firstIdx = videoList.findIndex(v => !allAnnotations[v.video_id]?.length);
+    function waitAndLoad() {
+      if (ytReady) loadVideo(firstIdx >= 0 ? firstIdx : 0);
+      else setTimeout(waitAndLoad, 200);
+    }
+    waitAndLoad();
+
+  } catch(err) {
+    errEl.textContent = '오류: ' + err.message;
+    document.getElementById('preload').classList.remove('hidden');
+  } finally {
+    overlay.classList.add('hidden');
+  }
+}
+
+function fmt(sec) {
+  if (sec == null || isNaN(sec)) return '00:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+function fmtFull(sec) {
+  if (sec == null || isNaN(sec)) return '00:00.000';
+  const m = Math.floor(sec / 60);
+  const s = (sec % 60).toFixed(3);
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(7,'0');
+}
+
+function currentVideo() { return videoList[currentIdx]; }
+function currentAnnotations() {
+  const vid = currentVideo()?.video_id;
+  if (!vid) return [];
+  if (!allAnnotations[vid]) allAnnotations[vid] = [];
+  return allAnnotations[vid];
+}
+
+// Guide modal
+function closeModal() {
+  document.getElementById('guideModal').classList.add('hidden');
+}
+document.getElementById('modalBody').addEventListener('scroll', function() {
+  const el = this;
+  const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+  if (atBottom) {
+    document.getElementById('btnStart').disabled = false;
+    document.getElementById('modalHint').style.opacity = '0';
+  }
+});
+
+// Quickstart toggle
+function toggleQS() {
+  const body = document.getElementById('qsBody');
+  const btn = document.getElementById('qsToggle');
+  const arrow = document.getElementById('qsArrow');
+  const isOpen = !body.classList.contains('hidden');
+  if (isOpen) {
+    body.classList.add('hidden');
+    btn.classList.remove('open');
+    arrow.innerHTML = '&#9660;'; // 접힘 → 아래 화살표 (펼치기 유도)
+  } else {
+    body.classList.remove('hidden');
+    btn.classList.add('open');
+    arrow.innerHTML = '&#9650;'; // 펼침 → 위 화살표 (접기 유도)
+  }
+}
+
+// YouTube IFrame API
+var tag = document.createElement('script');
+tag.src = 'https://www.youtube.com/iframe_api';
+document.head.appendChild(tag);
+
+window.onYouTubeIframeAPIReady = function() {
+  ytReady = true;
+};
+
+function createPlayer(youtubeId, start, end) {
+  if (ytPlayer) { ytPlayer.destroy(); ytPlayer = null; }
+  if (timeInterval) { clearInterval(timeInterval); timeInterval = null; }
+
+  // Re-create the div since YT.Player replaces it with an iframe
+  const wrap = document.querySelector('.video-wrap');
+  const oldEl = document.getElementById('ytplayer');
+  if (oldEl) oldEl.remove();
+  const newEl = document.createElement('div');
+  newEl.id = 'ytplayer';
+  wrap.appendChild(newEl);
+
+  ytPlayer = new YT.Player('ytplayer', {
+    videoId: youtubeId,
+    playerVars: {
+      start: Math.floor(start),
+      end: Math.ceil(end),
+      controls: 0,
+      modestbranding: 1,
+      rel: 0,
+      fs: 0,
+      disablekb: 1,
+    },
+    events: {
+      onReady: function(e) {
+        e.target.setPlaybackRate(rates[rateIdx]);
+        updateTimeDisplay();
+        startTimeUpdate();
+      },
+      onStateChange: function(e) {
+        updatePlayBtn();
+        if (e.data === YT.PlayerState.PLAYING) enforceRange();
+      }
+    }
+  });
+}
+
+function enforceRange() {
+  const v = currentVideo();
+  if (!v || !ytPlayer) return;
+  const t = ytPlayer.getCurrentTime();
+  if (t < v.start) ytPlayer.seekTo(v.start, true);
+  if (t >= v.end) { ytPlayer.pauseVideo(); ytPlayer.seekTo(v.end, true); }
+}
+
+function startTimeUpdate() {
+  if (timeInterval) clearInterval(timeInterval);
+  timeInterval = setInterval(function() {
+    if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
+    updateTimeDisplay();
+    enforceRange();
+    updateProgress();
+  }, 100);
+}
+
+function getRelativeTime() {
+  if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return 0;
+  const v = currentVideo();
+  return Math.max(0, ytPlayer.getCurrentTime() - v.start);
+}
+
+function getDuration() {
+  const v = currentVideo();
+  return v ? v.end - v.start : 0;
+}
+
+function updateTimeDisplay() {
+  const rel = getRelativeTime();
+  const dur = getDuration();
+  const v = currentVideo();
+  document.getElementById('timeCurrent').textContent = fmtFull(rel);
+  document.getElementById('timeTotal').textContent = '/ ' + fmt(dur);
+  document.getElementById('timeRange').textContent = fmt(v.start) + '~' + fmt(v.end) + '  ';
+}
+
+function updateProgress() {
+  const rel = getRelativeTime();
+  const dur = getDuration();
+  const pct = dur > 0 ? (rel / dur) * 100 : 0;
+  document.getElementById('progressFill').style.width = Math.min(pct, 100) + '%';
+}
+
+function renderProgressMarkers() {
+  const container = document.getElementById('progressMarkers');
+  const dur = getDuration();
+  if (dur <= 0) { container.innerHTML = ''; return; }
+  const anns = currentAnnotations();
+  let html = '';
+  anns.forEach(a => {
+    const pct = (a.time / dur) * 100;
+    const t = TAGS[a.tag];
+    html += '<div class="progress-marker" style="left:' + pct + '%;background:' + t.color + '"></div>';
+  });
+  container.innerHTML = html;
+}
+
+function seekProgress(e) {
+  const bar = document.getElementById('progressBar');
+  const rect = bar.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const dur = getDuration();
+  const v = currentVideo();
+  if (!v || !ytPlayer) return;
+  const targetAbs = v.start + pct * dur;
+  ytPlayer.seekTo(Math.max(v.start, Math.min(v.end, targetAbs)), true);
+}
+
+function updatePlayBtn() {
+  const btn = document.getElementById('btnPlay');
+  const playing = ytPlayer && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+  btn.innerHTML = (playing ? 'Pause' : 'Play') + ' <kbd>Space</kbd>';
+  if (playing) btn.classList.add('playing'); else btn.classList.remove('playing');
+}
+
+function togglePlay() {
+  if (!ytPlayer) return;
+  const state = ytPlayer.getPlayerState();
+  if (state === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
+  else { enforceRange(); ytPlayer.playVideo(); }
+}
+
+function seekRel(d) {
+  if (!ytPlayer) return;
+  const v = currentVideo();
+  const t = ytPlayer.getCurrentTime() + d;
+  ytPlayer.seekTo(Math.max(v.start, Math.min(v.end, t)), true);
+}
+
+function changeRate() {
+  rateIdx = (rateIdx + 1) % rates.length;
+  if (ytPlayer && ytPlayer.setPlaybackRate) ytPlayer.setPlaybackRate(rates[rateIdx]);
+  const btn = document.getElementById('btnRate');
+  btn.innerHTML = rates[rateIdx] + 'x <kbd>R</kbd>';
+  btn.classList.toggle('active', rates[rateIdx] !== 1);
+}
+
+function markTimestamp() {
+  if (!ytPlayer) return;
+  ytPlayer.pauseVideo();
+  pendingTime = getRelativeTime();
+  document.getElementById('pendingTime').textContent = fmtFull(pendingTime);
+  document.getElementById('pendingBox').classList.remove('hidden');
+}
+
+function cancelPending() {
+  document.getElementById('pendingBox').classList.add('hidden');
+  pendingTime = null;
+}
+
+function confirmTag(tag) {
+  if (pendingTime == null) return;
+  const vid = currentVideo()?.video_id;
+  if (!vid) return;
+  if (!allAnnotations[vid]) allAnnotations[vid] = [];
+  const ann = { time: pendingTime, tag: tag, id: Math.round(pendingTime * 1000) };
+  allAnnotations[vid].push(ann);
+  allAnnotations[vid].sort((a, b) => a.time - b.time);
+  pendingTime = null;
+  document.getElementById('pendingBox').classList.add('hidden');
+  renderAnnotations();
+  renderProgressMarkers();
+  sheetAdd(ann);
+}
+
+function deleteAnn(id) {
+  const vid = currentVideo()?.video_id;
+  if (!vid || !allAnnotations[vid]) return;
+  const ann = allAnnotations[vid].find(a => a.id === id);
+  allAnnotations[vid] = allAnnotations[vid].filter(a => a.id !== id);
+  renderAnnotations();
+  renderProgressMarkers();
+  if (ann) sheetDelete(ann);
+}
+
+function jumpTo(t) {
+  if (!ytPlayer) return;
+  const v = currentVideo();
+  ytPlayer.seekTo(v.start + t, true);
+}
+
+function renderAnnotations() {
+  const anns = currentAnnotations();
+  const list = document.getElementById('annList');
+  const count = document.getElementById('annCount');
+  const btn = document.getElementById('btnExport');
+  const btnAll = document.getElementById('btnExportAll');
+  count.textContent = anns.length;
+
+  const totalAnns = Object.values(allAnnotations).reduce((s, a) => s + a.length, 0);
+  if (totalAnns > 0) btnAll.classList.remove('hidden'); else btnAll.classList.add('hidden');
+
+  if (anns.length === 0) {
+    list.innerHTML = '<div class="ann-empty">영상을 재생하고 M 키로 경계를 표시하세요</div>';
+    btn.classList.add('hidden');
+    return;
+  }
+  btn.classList.remove('hidden');
+  let html = '';
+  anns.forEach((a) => {
+    const t = TAGS[a.tag];
+    html += '<div class="ann-item">'
+      + '<span class="ann-time" onclick="jumpTo(' + a.time + ')">' + fmtFull(a.time) + '</span>'
+      + '<span class="ann-tag" style="background:' + t.bg + ';color:' + t.color + '">' + a.tag + '</span>'
+      + '<button class="ann-del" onclick="deleteAnn(' + a.id + ')">×</button>'
+      + '</div>';
+  });
+  list.innerHTML = html;
+}
+
+function getAnnotatorId() {
+  return document.getElementById('annotatorIdPlayer').value
+      || document.getElementById('annotatorId').value
+      || 'unknown';
+}
+
+function exportCSV() {
+  const vid = currentVideo()?.video_id || 'unknown';
+  const aid = getAnnotatorId();
+  const anns = currentAnnotations();
+  let csv = 'video_id,timestamp_ms,tag,annotator_id\n';
+  anns.forEach(a => { csv += vid + ',' + Math.round(a.time * 1000) + ',' + a.tag + ',' + aid + '\n'; });
+  downloadCSV(csv, 'annotation_' + vid + '_' + aid + '.csv');
+}
+
+function exportAllCSV() {
+  const aid = getAnnotatorId();
+  let csv = 'video_id,timestamp_ms,tag,annotator_id\n';
+  videoList.forEach(v => {
+    const anns = allAnnotations[v.video_id] || [];
+    anns.forEach(a => { csv += v.video_id + ',' + Math.round(a.time * 1000) + ',' + a.tag + ',' + aid + '\n'; });
+  });
+  downloadCSV(csv, 'annotation_all_' + aid + '.csv');
+}
+
+function downloadCSV(csv, filename) {
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url; link.download = filename; link.click();
+}
+
+function loadVideo(idx) {
+  currentIdx = idx;
+  const v = videoList[idx];
+  pendingTime = null;
+  document.getElementById('pendingBox').classList.add('hidden');
+
+  document.getElementById('navIdx').textContent = (idx + 1) + '/' + videoList.length;
+  document.getElementById('navId').textContent = v.video_id;
+  document.getElementById('navRange').textContent = '(' + fmt(v.start) + ' ~ ' + fmt(v.end) + ')';
+  document.getElementById('btnPrev').disabled = idx === 0;
+  document.getElementById('btnNext').disabled = idx === videoList.length - 1;
+
+  const done = videoList.filter(v => allAnnotations[v.video_id]?.length > 0).length;
+  document.getElementById('navProgress').textContent = done + '/' + videoList.length + ' 완료';
+
+  rateIdx = 3;
+  document.getElementById('btnRate').innerHTML = '1x <kbd>R</kbd>';
+  document.getElementById('btnRate').classList.remove('active');
+
+  createPlayer(v.youtube_id, v.start, v.end);
+  renderAnnotations();
+  renderProgressMarkers();
+}
+
+function prevVideo() { if (currentIdx > 0) loadVideo(currentIdx - 1); }
+function nextVideo() { if (currentIdx < videoList.length - 1) loadVideo(currentIdx + 1); }
+
+// File input handler removed — segments loaded from Google Sheets via startSession()
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  else if (e.code === 'KeyM') { e.preventDefault(); markTimestamp(); }
+  else if (e.code === 'ArrowLeft') { e.preventDefault(); seekRel(-2); }
+  else if (e.code === 'ArrowRight') { e.preventDefault(); seekRel(2); }
+  else if (e.code === 'KeyR') { e.preventDefault(); changeRate(); }
+  else if (e.code === 'KeyN') { e.preventDefault(); nextVideo(); }
+  else if (e.code === 'KeyP') { e.preventDefault(); prevVideo(); }
+
+  if (pendingTime != null) {
+    if (e.code === 'Digit1') { e.preventDefault(); confirmTag('GAME'); }
+    else if (e.code === 'Digit2') { e.preventDefault(); confirmTag('BOTH'); }
+    else if (e.code === 'Escape') { e.preventDefault(); cancelPending(); }
+  }
+});
+</script>
+</body>
+</html>
