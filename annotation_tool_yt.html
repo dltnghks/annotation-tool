@@ -739,26 +739,8 @@ tag.src = 'https://www.youtube.com/iframe_api';
 document.head.appendChild(tag);
 
 window.onYouTubeIframeAPIReady = function() {
-  ytReady = true;
-};
-
-function createPlayer(youtubeId, start, end) {
-  if (ytPlayer) { ytPlayer.destroy(); ytPlayer = null; }
-  if (timeInterval) { clearInterval(timeInterval); timeInterval = null; }
-
-  // Re-create the div since YT.Player replaces it with an iframe
-  const wrap = document.querySelector('.video-wrap');
-  const oldEl = document.getElementById('ytplayer');
-  if (oldEl) oldEl.remove();
-  const newEl = document.createElement('div');
-  newEl.id = 'ytplayer';
-  wrap.appendChild(newEl);
-
   ytPlayer = new YT.Player('ytplayer', {
-    videoId: youtubeId,
     playerVars: {
-      start: Math.floor(start),
-      end: Math.ceil(end),
       controls: 0,
       modestbranding: 1,
       rel: 0,
@@ -766,10 +748,8 @@ function createPlayer(youtubeId, start, end) {
       disablekb: 1,
     },
     events: {
-      onReady: function(e) {
-        e.target.setPlaybackRate(rates[rateIdx]);
-        updateTimeDisplay();
-        startTimeUpdate();
+      onReady: function() {
+        ytReady = true;
       },
       onStateChange: function(e) {
         updatePlayBtn();
@@ -777,6 +757,22 @@ function createPlayer(youtubeId, start, end) {
       }
     }
   });
+};
+
+function createPlayer(youtubeId, start, end) {
+  if (timeInterval) { clearInterval(timeInterval); timeInterval = null; }
+
+  if (!ytReady) return; // waitAndLoad 루프가 처리
+
+  ytPlayer.loadVideoById({
+    videoId: youtubeId,
+    startSeconds: start,
+    endSeconds: end,
+  });
+  ytPlayer.pauseVideo();
+  ytPlayer.setPlaybackRate(rates[rateIdx]);
+  updateTimeDisplay();
+  startTimeUpdate();
 }
 
 function enforceRange() {
