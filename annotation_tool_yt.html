@@ -539,6 +539,32 @@ function seededShuffle(arr, seed) {
   return a;
 }
 
+// ── Device identification ──
+function getDeviceId() {
+  let id = localStorage.getItem('annotation_device_id');
+  if (!id) {
+    id = 'dev-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+    localStorage.setItem('annotation_device_id', id);
+  }
+  return id;
+}
+
+function getDeviceFingerprint() {
+  const raw = [
+    navigator.language,
+    navigator.platform,
+    navigator.hardwareConcurrency || 0,
+    screen.width + 'x' + screen.height,
+    screen.colorDepth,
+    new Date().getTimezoneOffset(),
+  ].join('|');
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    hash = Math.imul(31, hash) + raw.charCodeAt(i) | 0;
+  }
+  return 'fp-' + Math.abs(hash).toString(16);
+}
+
 // ── Google Sheets 연동 ──
 function updateSaveStatus(state, time) {
   const el = document.getElementById('saveIndicator');
@@ -562,7 +588,9 @@ async function sheetAdd(ann) {
         video_id: vid,
         timestamp_ms: Math.round(ann.time * 1000),
         tag: ann.tag,
-        annotator_id: aid
+        annotator_id: aid,
+        device_id: getDeviceId(),
+        device_fp: getDeviceFingerprint()
       })
     });
     updateSaveStatus('saved');
