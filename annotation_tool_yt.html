@@ -515,6 +515,7 @@ let pendingTime = null;
 let ytPlayer = null;    // 현재 활성 플레이어
 let ytPreload = null;   // 미리로드 플레이어
 let activeSlot = 'a';   // 현재 보이는 슬롯 ('a' or 'b')
+let preloadedIdx = -1;  // ytPreload에 로드된 영상 인덱스
 let ytReadyCount = 0;
 let ytReady = false;
 let timeInterval = null;
@@ -787,12 +788,16 @@ function swapToPreload(youtubeId, start, end) {
 
 function schedulePreload(nextIdx) {
   if (nextIdx >= videoList.length || !ytPreload) return;
+  if (preloadedIdx === nextIdx) return; // 이미 로드됨
   const v = videoList[nextIdx];
+  preloadedIdx = nextIdx;
   setTimeout(function() {
     ytPreload.loadVideoById({ videoId: v.youtube_id, startSeconds: v.start });
     ytPreload.playVideo(); // 광고 백그라운드 소화
-    setTimeout(function() { ytPreload.pauseVideo(); }, 8000); // 8초 후 정지
-  }, 1500); // 현재 영상 로드 안정화 후 시작
+    setTimeout(function() {
+      if (preloadedIdx === nextIdx) ytPreload.pauseVideo();
+    }, 10000); // 10초 후 정지 (광고 최대 소화)
+  }, 1500);
 }
 
 function createPlayer(youtubeId, start, end) {
@@ -1029,7 +1034,14 @@ function loadVideo(idx) {
   document.getElementById('btnRate').innerHTML = '1x <kbd>R</kbd>';
   document.getElementById('btnRate').classList.remove('active');
 
-  createPlayer(v.youtube_id, v.start, v.end);
+  if (preloadedIdx === idx) {
+    // 미리로드된 플레이어로 스왑
+    swapToPreload(v.youtube_id, v.start, v.end);
+    updateTimeDisplay();
+    startTimeUpdate();
+  } else {
+    createPlayer(v.youtube_id, v.start, v.end);
+  }
   schedulePreload(idx + 1);
   renderAnnotations();
   renderProgressMarkers();
