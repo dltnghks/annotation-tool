@@ -1065,6 +1065,10 @@ document.addEventListener('keydown', function(e) {
     else if (e.code === 'Escape') { e.preventDefault(); cancelPending(); }
   }
 });
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/annotation-tool/sw.js');
+}
 </script>
 </body>
 </html>
