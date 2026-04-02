@@ -90,13 +90,13 @@ h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; text-align: cen
 .btn-rate { font-family: 'IBM Plex Mono', monospace; }
 .btn-rate.active { background: #fef3c7; }
 kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mono', monospace; background: #f0f0f0; padding: 1px 4px; border-radius: 2px; }
-.progress-bar { width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; margin-bottom: 8px; cursor: pointer; position: relative; overflow: visible; }
-.progress-fill { height: 100%; background: #2563eb; border-radius: 4px; transition: width 0.1s; position: relative; z-index: 1; }
-.progress-segments { position: absolute; top: 0; left: 0; right: 0; height: 100%; border-radius: 4px; overflow: hidden; pointer-events: none; z-index: 0; }
-.progress-segment { position: absolute; top: 0; height: 100%; opacity: 0.5; }
+.progress-bar { width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; margin-bottom: 4px; cursor: pointer; position: relative; overflow: visible; }
+.progress-fill { height: 100%; background: #2563eb; border-radius: 4px; transition: width 0.1s; }
 .progress-markers { position: absolute; top: -4px; left: 0; right: 0; height: 16px; pointer-events: none; z-index: 2; }
 .progress-marker { position: absolute; width: 2px; height: 16px; top: 0; transform: translateX(-1px); }
 .progress-marker::after { content: ''; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background: inherit; }
+.category-bar { width: 100%; height: 6px; background: #f3f4f6; border-radius: 3px; margin-bottom: 8px; position: relative; overflow: hidden; }
+.category-segment { position: absolute; top: 0; height: 100%; opacity: 0.75; }
 
 /* Right panel sections */
 .panel-section { background: #f8f8fa; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
@@ -371,10 +371,10 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
           </span>
         </div>
         <div id="progressBar" class="progress-bar" onclick="seekProgress(event)">
-          <div id="progressSegments" class="progress-segments"></div>
           <div id="progressFill" class="progress-fill" style="width:0%"></div>
           <div id="progressMarkers" class="progress-markers"></div>
         </div>
+        <div id="categoryBar" class="category-bar"></div>
         <div class="btn-row">
           <button id="btnPlay" class="btn btn-play" onclick="togglePlay()">Play <kbd>Space</kbd></button>
           <button class="btn" onclick="seekRel(-2)">-2s <kbd>&larr;</kbd></button>
@@ -435,12 +435,11 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
           <strong>단축키</strong><br>
           <kbd>Space</kbd> 재생/정지 &middot;
           <kbd>M</kbd> 경계 표시 &middot;
-          <kbd>1</kbd><kbd>2</kbd> 태그 선택 &middot;
           <kbd>&larr;</kbd><kbd>&rarr;</kbd> 2초 이동 &middot;
           <kbd>R</kbd> 재생속도 &middot;
           <kbd>N</kbd> 다음 영상 &middot;
-          <kbd>P</kbd> 이전 영상 &middot;
-          <kbd>Esc</kbd> 취소
+          <kbd>P</kbd> 이전 영상<br>
+          경계 표시 후: <kbd>1</kbd>Exploration <kbd>2</kbd>Combat <kbd>3</kbd>Narrative <kbd>4</kbd>Menu/UI <kbd>5</kbd>Other &middot; <kbd>Enter</kbd> 확인 &middot; <kbd>Esc</kbd> 취소
         </div>
       </div>
 
@@ -472,8 +471,8 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
             <div class="qs-q pass">
               <div class="q-badge">Q3</div>
               <div class="q-body">
-                <strong>플레이어 측 행위인가?</strong>
-                <span>인벤토리·지도·메뉴 열기 등</span>
+                <strong>게임 세계가 일시정지·대기 상태로 전환되지 않는가?</strong>
+                <span>게임이 멈추거나 대기 상태로 바뀌면 경계 (로딩, 메뉴 등)</span>
               </div>
             </div>
           </div>
@@ -517,8 +516,8 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
               <ul>
                 <li>전투 중 타격·스킬</li>
                 <li>아이템 채집</li>
-                <li>인벤토리·지도 열기</li>
-                <li>BGM만 변화</li>
+                <li>게임 진행 중 UI 조작</li>
+                <li>카메라 이동</li>
               </ul>
             </div>
           </div>
@@ -840,12 +839,12 @@ function updateProgress() {
 
 function renderProgressMarkers() {
   const markerContainer = document.getElementById('progressMarkers');
-  const segContainer = document.getElementById('progressSegments');
+  const categoryBar = document.getElementById('categoryBar');
   const dur = getDuration();
-  if (dur <= 0) { markerContainer.innerHTML = ''; segContainer.innerHTML = ''; return; }
+  if (dur <= 0) { markerContainer.innerHTML = ''; categoryBar.innerHTML = ''; return; }
   const anns = currentAnnotations();
 
-  // 마커 세로선
+  // 마커 세로선 (재생 바 위)
   let markerHtml = '';
   anns.forEach(a => {
     const pct = (a.time / dur) * 100;
@@ -854,15 +853,15 @@ function renderProgressMarkers() {
   });
   markerContainer.innerHTML = markerHtml;
 
-  // 카테고리 구간 색상
-  let segHtml = '';
+  // 카테고리 구간 바 (재생 바 아래 독립)
+  let catHtml = '';
   anns.forEach((a, i) => {
     const startPct = (a.time / dur) * 100;
     const endPct = i + 1 < anns.length ? (anns[i + 1].time / dur) * 100 : 100;
     const color = CAT_COLOR[a.category] || '#888';
-    segHtml += '<div class="progress-segment" style="left:' + startPct + '%;width:' + (endPct - startPct) + '%;background:' + color + '"></div>';
+    catHtml += '<div class="category-segment" style="left:' + startPct + '%;width:' + (endPct - startPct) + '%;background:' + color + '"></div>';
   });
-  segContainer.innerHTML = segHtml;
+  categoryBar.innerHTML = catHtml;
 }
 
 function seekProgress(e) {
