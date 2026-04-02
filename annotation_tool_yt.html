@@ -90,10 +90,13 @@ h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; text-align: cen
 .btn-rate { font-family: 'IBM Plex Mono', monospace; }
 .btn-rate.active { background: #fef3c7; }
 kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mono', monospace; background: #f0f0f0; padding: 1px 4px; border-radius: 2px; }
-.progress-bar { width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; margin-bottom: 8px; cursor: pointer; position: relative; }
-.progress-fill { height: 100%; background: #2563eb; border-radius: 3px; transition: width 0.1s; }
-.progress-markers { position: absolute; top: -3px; left: 0; right: 0; height: 12px; pointer-events: none; }
-.progress-marker { position: absolute; width: 3px; height: 12px; border-radius: 1px; top: 0; transform: translateX(-1px); }
+.progress-bar { width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; margin-bottom: 8px; cursor: pointer; position: relative; overflow: visible; }
+.progress-fill { height: 100%; background: #2563eb; border-radius: 4px; transition: width 0.1s; position: relative; z-index: 1; }
+.progress-segments { position: absolute; top: 0; left: 0; right: 0; height: 100%; border-radius: 4px; overflow: hidden; pointer-events: none; z-index: 0; }
+.progress-segment { position: absolute; top: 0; height: 100%; opacity: 0.5; }
+.progress-markers { position: absolute; top: -4px; left: 0; right: 0; height: 16px; pointer-events: none; z-index: 2; }
+.progress-marker { position: absolute; width: 2px; height: 16px; top: 0; transform: translateX(-1px); }
+.progress-marker::after { content: ''; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background: inherit; }
 
 /* Right panel sections */
 .panel-section { background: #f8f8fa; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
@@ -368,6 +371,7 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
           </span>
         </div>
         <div id="progressBar" class="progress-bar" onclick="seekProgress(event)">
+          <div id="progressSegments" class="progress-segments"></div>
           <div id="progressFill" class="progress-fill" style="width:0%"></div>
           <div id="progressMarkers" class="progress-markers"></div>
         </div>
@@ -530,6 +534,13 @@ const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxkV6YmHrzJeYyU8o_FP
 const SECRET_TOKEN = '9ccca955c380756263d90c01308876c9a20e66b6';
 
 const CATEGORIES = ['Exploration', 'Combat', 'Narrative', 'Menu/UI', 'Other'];
+const CAT_COLOR = {
+  'Exploration': '#6366f1',
+  'Combat':      '#ef4444',
+  'Narrative':   '#f59e0b',
+  'Menu/UI':     '#8b5cf6',
+  'Other':       '#6b7280',
+};
 
 let videoList = [];
 let currentIdx = 0;
@@ -824,17 +835,30 @@ function updateProgress() {
 }
 
 function renderProgressMarkers() {
-  const container = document.getElementById('progressMarkers');
+  const markerContainer = document.getElementById('progressMarkers');
+  const segContainer = document.getElementById('progressSegments');
   const dur = getDuration();
-  if (dur <= 0) { container.innerHTML = ''; return; }
+  if (dur <= 0) { markerContainer.innerHTML = ''; segContainer.innerHTML = ''; return; }
   const anns = currentAnnotations();
-  let html = '';
+
+  // 마커 세로선
+  let markerHtml = '';
   anns.forEach(a => {
     const pct = (a.time / dur) * 100;
-    const t = TAGS[a.tag];
-    html += '<div class="progress-marker" style="left:' + pct + '%;background:' + t.color + '"></div>';
+    const color = CAT_COLOR[a.category] || '#888';
+    markerHtml += '<div class="progress-marker" style="left:' + pct + '%;background:' + color + '"></div>';
   });
-  container.innerHTML = html;
+  markerContainer.innerHTML = markerHtml;
+
+  // 카테고리 구간 색상
+  let segHtml = '';
+  anns.forEach((a, i) => {
+    const startPct = (a.time / dur) * 100;
+    const endPct = i + 1 < anns.length ? (anns[i + 1].time / dur) * 100 : 100;
+    const color = CAT_COLOR[a.category] || '#888';
+    segHtml += '<div class="progress-segment" style="left:' + startPct + '%;width:' + (endPct - startPct) + '%;background:' + color + '"></div>';
+  });
+  segContainer.innerHTML = segHtml;
 }
 
 function seekProgress(e) {
