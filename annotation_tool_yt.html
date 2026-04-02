@@ -238,12 +238,12 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
         <div class="qs-q pass">
           <div class="q-badge">Q3</div>
           <div class="q-body">
-            <strong>플레이어 측 행위에 불과한가?</strong>
-            <span>UI 열기, 메뉴 조작, 인벤토리·지도·설정 등은 경계가 아닙니다.</span>
+            <strong>게임 진행을 중단하지 않는 일시적 조작인가?</strong>
+            <span>인벤토리·지도·설정처럼 게임 흐름을 끊지 않는 조작은 경계가 아닙니다.<br>단, 게임이 일시정지·대기 상태로 전환되는 경우(로딩, 메뉴 진입)는 경계입니다.</span>
           </div>
         </div>
       </div>
-      <div class="qs-pass-note">세 질문을 모두 <strong>통과</strong>하면 경계로 표시하고, 오디오 동반 여부에 따라 태그를 선택합니다.</div>
+      <div class="qs-pass-note">세 질문을 모두 <strong>통과</strong>하면 경계로 표시하고, 이후 구간의 <strong>카테고리</strong>를 선택합니다.</div>
 
       <!-- 카테고리 기준 -->
       <div class="qs-section-title">카테고리 선택 기준</div>
@@ -275,13 +275,15 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
       <div class="qs-section-title">판단 예시</div>
       <div class="qs-ex">
         <div class="qs-ex-col">
-          <div class="ex-head" style="color:#059669;">✓ 경계 표시</div>
+          <div class="ex-head" style="color:#059669;">✓ 경계 표시 (→ 카테고리)</div>
           <ul>
-            <li>전투 시작 / 종료 후 탐색 복귀</li>
-            <li>컷씬·대화 진입 / 종료</li>
-            <li>보스 페이즈 전환</li>
-            <li>새 지역·스테이지 진입</li>
-            <li>로딩 화면 진입 / 종료</li>
+            <li>전투 시작 → <strong style="color:#ef4444;">Combat</strong></li>
+            <li>전투 종료, 탐색 복귀 → <strong style="color:#6366f1;">Exploration</strong></li>
+            <li>컷씬·대화 진입 → <strong style="color:#d97706;">Narrative</strong></li>
+            <li>컷씬·대화 종료 → 이후 구간에 맞게 선택</li>
+            <li>보스 페이즈 전환 → <strong style="color:#ef4444;">Combat</strong></li>
+            <li>새 지역·스테이지 진입 → <strong style="color:#6366f1;">Exploration</strong></li>
+            <li>로딩 화면 진입 / 종료 → <strong style="color:#8b5cf6;">Menu/UI</strong></li>
           </ul>
         </div>
         <div class="qs-ex-col">
@@ -292,7 +294,6 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
             <li>인벤토리·스킬창·지도 열기</li>
             <li>장비 교체·스킬 포인트 투자</li>
             <li>카메라 이동 (맥락 변화 없음)</li>
-            <li>BGM만 서서히 변화 (화면 변화 없음)</li>
           </ul>
         </div>
       </div>
@@ -300,10 +301,10 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
       <!-- 주의사항 -->
       <div class="qs-section-title">주의사항</div>
       <div class="qs-tip" style="background:#f0f4f8;border-color:#93c5fd;color:#1e3a5f;">
-        영상과 <strong>오디오를 함께</strong> 시청하며 <strong>게임 이벤트 기준</strong>으로 경계를 표시하세요.<br>
-        순수한 오디오 변화만 있고 게임 이벤트가 없으면 경계로 표시하지 않습니다.<br>
+        <strong>이벤트 전환이 시작되는 시점</strong>을 표시합니다 (종료 시점이 아닌 진입 시점).<br>
+        카테고리는 <strong>경계 이후 구간</strong>의 성격을 기준으로 선택합니다.<br>
         영상 전체에 걸쳐 <strong>동일한 기준</strong>을 적용하세요. 일관성이 가장 중요합니다.<br>
-        <strong>이벤트 전환이 시작되는 시점</strong>을 표시합니다 (종료 시점 아님). 애매한 경우엔 표시하세요.
+        애매한 경우엔 경계로 표시하고 Note에 메모를 남기세요.
       </div>
 
     </div>
