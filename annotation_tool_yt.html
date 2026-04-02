@@ -531,7 +531,7 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
 </div><!-- end #player -->
 
 <script>
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxkV6YmHrzJeYyU8o_FPgibJtdFI54bCzkMpgwYczmfyzjOJJxqishKv0yiNUdiYGjL/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwSbwO96kK9_90PMIg2z-wbIQdKHMuppnWog8TGHkmOVQc2lFh5MHI2DoHlTBHumdj4/exec';
 const SECRET_TOKEN = '9ccca955c380756263d90c01308876c9a20e66b6';
 
 const CATEGORIES = ['Exploration', 'Combat', 'Narrative', 'Menu/UI', 'Other'];
@@ -605,9 +605,9 @@ async function sheetAdd(ann) {
   const aid = getAnnotatorId();
   updateSaveStatus('saving');
   try {
-    await fetch(WEBAPP_URL, {
+    const res = await fetch(WEBAPP_URL, {
       method: 'POST',
-      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         action: 'add',
         token: SECRET_TOKEN,
@@ -620,8 +620,11 @@ async function sheetAdd(ann) {
         device_fp: getDeviceFingerprint()
       })
     });
+    const text = await res.text();
+    if (text !== 'ok') console.error('sheetAdd 오류:', text);
     updateSaveStatus('saved');
   } catch(e) {
+    console.error('sheetAdd fetch 실패:', e);
     updateSaveStatus('error');
   }
 }
@@ -633,7 +636,7 @@ async function sheetDelete(ann) {
   try {
     await fetch(WEBAPP_URL, {
       method: 'POST',
-      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         action: 'delete',
         token: SECRET_TOKEN,
