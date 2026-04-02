@@ -100,14 +100,16 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
 
 /* Pending */
 .pending { border: 2px solid #f59e0b; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; background: #fffbeb; animation: fadeIn 0.15s ease; }
-.pending-label { font-size: 13px; font-weight: 500; color: #92400e; margin-bottom: 8px; }
+.pending-label { font-size: 13px; font-weight: 500; color: #92400e; margin-bottom: 10px; }
 .pending-time { font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; }
-.tag-row { display: flex; gap: 8px; }
-.tag-btn { flex: 1; padding: 10px 8px; border-radius: 8px; cursor: pointer; text-align: center; background: none; font-family: inherit; }
-.tag-btn:hover { filter: brightness(0.95); }
-.tag-btn .name { font-size: 14px; font-weight: 600; }
-.tag-btn .desc { font-size: 11px; color: #666; margin-top: 2px; }
-.tag-cancel { padding: 10px 14px; border-radius: 8px; border: 1px solid #ddd; background: #f5f5f5; cursor: pointer; font-size: 12px; color: #999; font-family: inherit; }
+.pending-field { margin-bottom: 8px; }
+.pending-field label { display: block; font-size: 11px; font-weight: 600; color: #78350f; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.pending-select { width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #fcd34d; background: #fff; font-family: inherit; font-size: 13px; cursor: pointer; }
+.pending-note { width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #fcd34d; background: #fff; font-family: inherit; font-size: 13px; box-sizing: border-box; resize: none; }
+.pending-row { display: flex; gap: 8px; margin-top: 10px; }
+.pending-confirm { flex: 1; padding: 8px; border-radius: 8px; border: 2px solid #f59e0b; background: #fbbf24; color: #fff; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 13px; }
+.pending-confirm:hover { background: #f59e0b; }
+.tag-cancel { padding: 8px 14px; border-radius: 8px; border: 1px solid #ddd; background: #f5f5f5; cursor: pointer; font-size: 12px; color: #999; font-family: inherit; }
 
 /* Annotations */
 .ann-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -122,7 +124,8 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
 .ann-item:nth-child(odd) { background: #fafafa; }
 .ann-time { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500; min-width: 60px; cursor: pointer; color: #2563eb; text-decoration: underline; text-decoration-color: #bfdbfe; }
 .ann-time:hover { color: #1d4ed8; }
-.ann-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.ann-cat { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #e0e7ff; color: #3730a3; }
+.ann-note { font-size: 11px; color: #666; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ann-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 15px; padding: 0 4px; line-height: 1; margin-left: auto; }
 .ann-del:hover { color: #ef4444; }
 
@@ -239,19 +242,31 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
       </div>
       <div class="qs-pass-note">세 질문을 모두 <strong>통과</strong>하면 경계로 표시하고, 오디오 동반 여부에 따라 태그를 선택합니다.</div>
 
-      <!-- 태그 기준 -->
-      <div class="qs-section-title">태그 선택 기준</div>
+      <!-- 카테고리 기준 -->
+      <div class="qs-section-title">카테고리 선택 기준</div>
+      <p style="font-size:12px;color:#666;margin-bottom:8px;">경계 이후 시작되는 구간의 성격을 선택합니다.</p>
       <div class="qs-tags">
-        <div class="qs-tag-card" style="border-color:#2563eb;">
-          <div class="tag-name" style="color:#2563eb;"><kbd style="font-size:12px;background:#dbeafe;border-color:#93c5fd;color:#1e40af;">1</kbd> GAME</div>
-          <div class="tag-crit">게임 이벤트 발생, 오디오 변화 없거나 미미<br><em>예: 위험 지역 진입(오디오 변화 없음)</em></div>
+        <div class="qs-tag-card" style="border-color:#6366f1;">
+          <div class="tag-name" style="color:#6366f1;">Exploration</div>
+          <div class="tag-crit">자유 탐색, 이동, 퀘스트 수행 등</div>
         </div>
-        <div class="qs-tag-card" style="border-color:#059669;">
-          <div class="tag-name" style="color:#059669;"><kbd style="font-size:12px;background:#d1fae5;border-color:#6ee7b7;color:#065f46;">2</kbd> BOTH</div>
-          <div class="tag-crit">게임 이벤트 + 오디오 변화 동반<br><em>예: 전투 시작 시 소리 변화, 컷씬 진입 시 소리 변화</em></div>
+        <div class="qs-tag-card" style="border-color:#ef4444;">
+          <div class="tag-name" style="color:#ef4444;">Combat</div>
+          <div class="tag-crit">전투, 보스전 등 전투 상태</div>
+        </div>
+        <div class="qs-tag-card" style="border-color:#f59e0b;">
+          <div class="tag-name" style="color:#d97706;">Narrative</div>
+          <div class="tag-crit">컷씬, 대화, 스토리 연출</div>
+        </div>
+        <div class="qs-tag-card" style="border-color:#8b5cf6;">
+          <div class="tag-name" style="color:#8b5cf6;">Menu/UI</div>
+          <div class="tag-crit">메뉴, 로딩화면, 일시정지 등</div>
+        </div>
+        <div class="qs-tag-card" style="border-color:#6b7280;">
+          <div class="tag-name" style="color:#6b7280;">Other</div>
+          <div class="tag-crit">위 항목에 해당하지 않는 경우</div>
         </div>
       </div>
-      <div class="qs-tip">오디오는 BGM·SFX·SPEECH 모두 포함. 소리가 새로 생기거나 사라지는 것 모두 변화입니다.<br>애매하면 <strong>BOTH</strong>를 선택하세요.</div>
 
       <!-- 판단 예시 -->
       <div class="qs-section-title">판단 예시</div>
@@ -369,21 +384,27 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
     <!-- ── RIGHT: Pending / Annotations / Quickstart ── -->
     <div class="player-right">
 
-      <!-- Pending tag selection -->
+      <!-- Pending annotation -->
       <div id="pendingBox" class="pending hidden">
-        <div class="pending-label">경계를 표시할 시점: <span id="pendingTime" class="pending-time"></span></div>
-        <div class="tag-row">
-          <button class="tag-btn" style="border:2px solid #2563eb; background:#dbeafe" onclick="confirmTag('GAME')">
-            <div class="name" style="color:#2563eb">GAME</div>
-            <div class="desc">오디오 변화 없거나 미미</div>
-            <kbd>1</kbd>
-          </button>
-          <button class="tag-btn" style="border:2px solid #059669; background:#d1fae5" onclick="confirmTag('BOTH')">
-            <div class="name" style="color:#059669">BOTH</div>
-            <div class="desc">오디오 변화 동반</div>
-            <kbd>2</kbd>
-          </button>
-          <button class="tag-cancel" onclick="cancelPending()">취소<br><kbd>Esc</kbd></button>
+        <div class="pending-label">경계 시점: <span id="pendingTime" class="pending-time"></span></div>
+        <div class="pending-field">
+          <label>이후 구간 카테고리</label>
+          <select id="pendingCategory" class="pending-select">
+            <option value="">-- 선택 --</option>
+            <option value="Exploration">Exploration</option>
+            <option value="Combat">Combat</option>
+            <option value="Narrative">Narrative</option>
+            <option value="Menu/UI">Menu/UI</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="pending-field">
+          <label>Note (선택)</label>
+          <textarea id="pendingNote" class="pending-note" rows="2" placeholder="추가 메모..."></textarea>
+        </div>
+        <div class="pending-row">
+          <button class="pending-confirm" onclick="confirmAnnotation()">확인 <kbd style="background:rgba(255,255,255,0.3);border-color:rgba(255,255,255,0.4);color:#fff;">Enter</kbd></button>
+          <button class="tag-cancel" onclick="cancelPending()">취소 <kbd>Esc</kbd></button>
         </div>
       </div>
 
@@ -451,21 +472,27 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
               </div>
             </div>
           </div>
-          <div class="qs-pass-note">세 질문 모두 통과 → 경계 표시 후 태그 선택</div>
+          <div class="qs-pass-note">세 질문 모두 통과 → 경계 표시 후 카테고리 선택</div>
 
-          <!-- 태그 기준 -->
-          <div class="qs-section-title">태그 선택</div>
-          <div class="qs-tags">
-            <div class="qs-tag-card" style="border-color:#2563eb;">
-              <div class="tag-name" style="color:#2563eb;font-size:13px;"><kbd style="font-size:11px;background:#dbeafe;border-color:#93c5fd;color:#1e40af;">1</kbd> GAME</div>
-              <div class="tag-crit">게임 이벤트, 오디오 미미</div>
+          <!-- 카테고리 기준 -->
+          <div class="qs-section-title">카테고리 선택</div>
+          <div class="qs-tags" style="flex-wrap:wrap;">
+            <div class="qs-tag-card" style="border-color:#6366f1;min-width:80px;">
+              <div class="tag-name" style="color:#6366f1;font-size:12px;">Exploration</div>
             </div>
-            <div class="qs-tag-card" style="border-color:#059669;">
-              <div class="tag-name" style="color:#059669;font-size:13px;"><kbd style="font-size:11px;background:#d1fae5;border-color:#6ee7b7;color:#065f46;">2</kbd> BOTH</div>
-              <div class="tag-crit">게임 이벤트 + 오디오 변화</div>
+            <div class="qs-tag-card" style="border-color:#ef4444;min-width:80px;">
+              <div class="tag-name" style="color:#ef4444;font-size:12px;">Combat</div>
+            </div>
+            <div class="qs-tag-card" style="border-color:#f59e0b;min-width:80px;">
+              <div class="tag-name" style="color:#d97706;font-size:12px;">Narrative</div>
+            </div>
+            <div class="qs-tag-card" style="border-color:#8b5cf6;min-width:80px;">
+              <div class="tag-name" style="color:#8b5cf6;font-size:12px;">Menu/UI</div>
+            </div>
+            <div class="qs-tag-card" style="border-color:#6b7280;min-width:80px;">
+              <div class="tag-name" style="color:#6b7280;font-size:12px;">Other</div>
             </div>
           </div>
-          <div class="qs-tip">오디오 변화 = 소리가 새로 생기거나 사라지는 것 (BGM·SFX·SPEECH 모두 포함). 애매하면 <strong>BOTH</strong>.</div>
 
           <!-- 예시 -->
           <div class="qs-section-title">빠른 예시</div>
@@ -502,10 +529,7 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
 const WEBAPP_URL = '%%WEBAPP_URL%%';
 const SECRET_TOKEN = '%%SECRET_TOKEN%%';
 
-const TAGS = {
-  GAME:  { color: '#2563eb', bg: '#dbeafe' },
-  BOTH:  { color: '#059669', bg: '#d1fae5' },
-};
+const CATEGORIES = ['Exploration', 'Combat', 'Narrative', 'Menu/UI', 'Other'];
 
 let videoList = [];
 let currentIdx = 0;
@@ -577,7 +601,8 @@ async function sheetAdd(ann) {
         token: SECRET_TOKEN,
         video_id: vid,
         timestamp_ms: Math.round(ann.time * 1000),
-        tag: ann.tag,
+        category: ann.category,
+        note: ann.note || '',
         annotator_id: aid,
         device_id: getDeviceId(),
         device_fp: getDeviceFingerprint()
@@ -643,7 +668,8 @@ async function startSession() {
       if (!allAnnotations[vid]) allAnnotations[vid] = [];
       allAnnotations[vid].push({
         time: Number(row.timestamp_ms) / 1000,
-        tag: row.tag,
+        category: row.category || '',
+        note: row.note || '',
         id: Number(row.timestamp_ms)
       });
     });
@@ -864,16 +890,21 @@ function cancelPending() {
   pendingTime = null;
 }
 
-function confirmTag(tag) {
+function confirmAnnotation() {
   if (pendingTime == null) return;
   const vid = currentVideo()?.video_id;
   if (!vid) return;
+  const category = document.getElementById('pendingCategory').value;
+  if (!category) { document.getElementById('pendingCategory').focus(); return; }
+  const note = document.getElementById('pendingNote').value.trim();
   if (!allAnnotations[vid]) allAnnotations[vid] = [];
-  const ann = { time: pendingTime, tag: tag, id: Math.round(pendingTime * 1000) };
+  const ann = { time: pendingTime, category, note, id: Math.round(pendingTime * 1000) };
   allAnnotations[vid].push(ann);
   allAnnotations[vid].sort((a, b) => a.time - b.time);
   pendingTime = null;
   document.getElementById('pendingBox').classList.add('hidden');
+  document.getElementById('pendingCategory').value = '';
+  document.getElementById('pendingNote').value = '';
   renderAnnotations();
   renderProgressMarkers();
   sheetAdd(ann);
@@ -914,10 +945,10 @@ function renderAnnotations() {
   btn.classList.remove('hidden');
   let html = '';
   anns.forEach((a) => {
-    const t = TAGS[a.tag];
     html += '<div class="ann-item">'
       + '<span class="ann-time" onclick="jumpTo(' + a.time + ')">' + fmtFull(a.time) + '</span>'
-      + '<span class="ann-tag" style="background:' + t.bg + ';color:' + t.color + '">' + a.tag + '</span>'
+      + '<span class="ann-cat">' + (a.category || '-') + '</span>'
+      + (a.note ? '<span class="ann-note" title="' + a.note.replace(/"/g,'&quot;') + '">' + a.note + '</span>' : '')
       + '<button class="ann-del" onclick="deleteAnn(' + a.id + ')">×</button>'
       + '</div>';
   });
@@ -934,17 +965,17 @@ function exportCSV() {
   const vid = currentVideo()?.video_id || 'unknown';
   const aid = getAnnotatorId();
   const anns = currentAnnotations();
-  let csv = 'video_id,timestamp_ms,tag,annotator_id\n';
-  anns.forEach(a => { csv += vid + ',' + Math.round(a.time * 1000) + ',' + a.tag + ',' + aid + '\n'; });
+  let csv = 'video_id,timestamp_ms,category,note,annotator_id\n';
+  anns.forEach(a => { csv += [vid, Math.round(a.time * 1000), a.category, '"' + (a.note||'').replace(/"/g,'""') + '"', aid].join(',') + '\n'; });
   downloadCSV(csv, 'annotation_' + vid + '_' + aid + '.csv');
 }
 
 function exportAllCSV() {
   const aid = getAnnotatorId();
-  let csv = 'video_id,timestamp_ms,tag,annotator_id\n';
+  let csv = 'video_id,timestamp_ms,category,note,annotator_id\n';
   videoList.forEach(v => {
     const anns = allAnnotations[v.video_id] || [];
-    anns.forEach(a => { csv += v.video_id + ',' + Math.round(a.time * 1000) + ',' + a.tag + ',' + aid + '\n'; });
+    anns.forEach(a => { csv += [v.video_id, Math.round(a.time * 1000), a.category, '"' + (a.note||'').replace(/"/g,'""') + '"', aid].join(',') + '\n'; });
   });
   downloadCSV(csv, 'annotation_all_' + aid + '.csv');
 }
@@ -998,8 +1029,7 @@ document.addEventListener('keydown', function(e) {
   else if (e.code === 'KeyP') { e.preventDefault(); prevVideo(); }
 
   if (pendingTime != null) {
-    if (e.code === 'Digit1') { e.preventDefault(); confirmTag('GAME'); }
-    else if (e.code === 'Digit2') { e.preventDefault(); confirmTag('BOTH'); }
+    if (e.code === 'Enter') { e.preventDefault(); confirmAnnotation(); }
     else if (e.code === 'Escape') { e.preventDefault(); cancelPending(); }
   }
 });
