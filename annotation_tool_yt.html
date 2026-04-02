@@ -605,9 +605,9 @@ async function sheetAdd(ann) {
   const aid = getAnnotatorId();
   updateSaveStatus('saving');
   try {
-    await fetch(WEBAPP_URL, {
+    const res = await fetch(WEBAPP_URL, {
       method: 'POST',
-      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         action: 'add',
         token: SECRET_TOKEN,
@@ -620,8 +620,11 @@ async function sheetAdd(ann) {
         device_fp: getDeviceFingerprint()
       })
     });
+    const text = await res.text();
+    if (text !== 'ok') console.error('sheetAdd 오류:', text);
     updateSaveStatus('saved');
   } catch(e) {
+    console.error('sheetAdd fetch 실패:', e);
     updateSaveStatus('error');
   }
 }
@@ -633,7 +636,7 @@ async function sheetDelete(ann) {
   try {
     await fetch(WEBAPP_URL, {
       method: 'POST',
-      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         action: 'delete',
         token: SECRET_TOKEN,
