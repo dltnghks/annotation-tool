@@ -667,7 +667,7 @@ async function startSession() {
     const segRes = await fetch(WEBAPP_URL + '?action=getSegments&token=' + SECRET_TOKEN);
     const segData = await segRes.json();
     if (segData.status !== 'ok') throw new Error('segments 로드 실패: ' + segData.message);
-    videoList = seededShuffle(segData.data, aid);
+    videoList = segData.data;
     videoList = videoList.map(v => ({ ...v, start: parseTimeValue(v.start), end: parseTimeValue(v.end) }));
 
     // 2. 기존 어노테이션 로드
