@@ -224,22 +224,24 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
         <div class="qs-q pass">
           <div class="q-badge">Q1</div>
           <div class="q-body">
-            <strong>게임 상태가 변화하지 않았는가?</strong>
-            <span>플레이어 조작이 아니라 게임 자체 상태가 달라져야 합니다.<br>게임 상태의 변화란 게임 시스템이 플레이어에게 무엇을 요구하는가가 바뀌는 것을 말합니다.</span>
+            <strong>게임 상태가 실제로 변화했는가?</strong>
+            <span>플레이어의 개별 조작이 아니라, 게임 자체의 상태가 달라져야 합니다.<br>게임 상태의 변화란 게임 시스템이 플레이어에게 무엇을 요구하는가가 바뀌는 것을 말합니다.</span>
           </div>
         </div>
         <div class="qs-q pass">
           <div class="q-badge">Q2</div>
           <div class="q-body">
-            <strong>동일 상태 내의 미시 이벤트인가?</strong>
+            <strong>이 변화가 동일 상태 내부의 미시 이벤트가 아닌가?</strong>
             <span>같은 상태 안에서 반복되는 작은 이벤트는 경계가 아닙니다.<br>예: 전투 중 개별 타격, 탐색 중 채집</span>
           </div>
         </div>
         <div class="qs-q pass">
           <div class="q-badge">Q3</div>
           <div class="q-body">
-            <strong>게임 세계가 일시정지·대기 상태로 전환되지 않는가?</strong>
-            <span>플레이어 조작이더라도 게임 세계가 멈추거나 대기 상태로 바뀌면 경계입니다.<br>예: 전투 중 인벤토리를 열어 게임이 일시정지되면 경계, 게임이 계속 진행되면 경계 아님.</span>
+            <strong>이 변화가 플레이의 주된 맥락을 새롭게 형성하는가?</strong>
+            <span>짧거나 부수적인 변화가 아니라, 이전 구간과 구별되는 새로운 플레이 맥락이 형성되어야 합니다.
+              <br>예: 탐색에서 전투로 전환, 전투에서 컷신으로 전환, 플레이 흐름을 끊고 인벤토리/맵/장비 관리로 들어가는 경우는 경계가 될 수 있습니다
+              <br>반면, 잠깐 스킬창이나 맵을 열어 확인하고 바로 복귀하는 경우처럼 게임 흐름을 실질적으로 바꾸지 않는 경우는 경계가 아닙니다.</span>
           </div>
         </div>
       </div>
@@ -453,22 +455,22 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
           <div class="qs-q pass">
             <div class="q-badge">Q1</div>
             <div class="q-body">
-              <strong>게임 상태가 변화하지 않았는가?</strong>
-              <span>게임 시스템이 플레이어에게 무엇을 요구하는가가 바뀌는 시점인가?</span>
+              <strong>게임 상태가 실제로 변화했는가?</strong>
+              <span>플레이어의 개별 조작이 아니라, 게임 자체의 상태가 달라져야 합니다.</span>
             </div>
           </div>
           <div class="qs-q pass">
             <div class="q-badge">Q2</div>
             <div class="q-body">
-              <strong>동일 상태 내 미시 이벤트인가?</strong>
-              <span>전투 중 타격, 탐색 중 채집 등</span>
+              <strong>이 변화가 동일 상태 내부의 미시 이벤트가 아닌가?</strong>
+              <span>예: 전투 중 개별 타격, 탐색 중 채집, 이동 중 짧은 회피나 점프</span>
             </div>
           </div>
           <div class="qs-q pass">
             <div class="q-badge">Q3</div>
             <div class="q-body">
-              <strong>게임 세계가 일시정지·대기 상태로 전환되지 않는가?</strong>
-              <span>게임이 멈추거나 대기 상태로 바뀌면 경계 (로딩, 메뉴 등)</span>
+              <strong>이 변화가 플레이의 주된 맥락을 새롭게 형성하는가?</strong>
+              <span>짧거나 부수적인 변화가 아니라, 이전 구간과 구별되는 새로운 플레이 맥락이 형성되어야 합니다.</span>
             </div>
           </div>
         </div>
@@ -518,7 +520,6 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
             <ul>
               <li>전투 중 타격·스킬</li>
               <li>아이템 채집</li>
-              <li>게임 진행 중 UI 조작</li>
               <li>카메라 이동</li>
             </ul>
           </div>
