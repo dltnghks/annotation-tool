@@ -668,7 +668,7 @@ async function startSession() {
     const segData = await segRes.json();
     if (segData.status !== 'ok') throw new Error('segments 로드 실패: ' + segData.message);
     videoList = seededShuffle(segData.data, aid);
-    videoList = videoList.map(v => ({ ...v, start: Number(v.start), end: Number(v.end) }));
+    videoList = videoList.map(v => ({ ...v, start: parseTimeValue(v.start), end: parseTimeValue(v.end) }));
 
     // 2. 기존 어노테이션 로드
     loadingText.textContent = '이전 작업 불러오는 중...';
@@ -710,6 +710,16 @@ async function startSession() {
   } finally {
     overlay.classList.add('hidden');
   }
+}
+
+function parseTimeValue(val) {
+  if (val === '' || val == null) return 0;
+  const s = String(val).trim();
+  const parts = s.split(':');
+  if (parts.length === 1) return Number(s) || 0;
+  if (parts.length === 2) return Number(parts[0]) * 60 + Number(parts[1]);
+  if (parts.length === 3) return Number(parts[0]) * 3600 + Number(parts[1]) * 60 + Number(parts[2]);
+  return 0;
 }
 
 function fmt(sec) {
