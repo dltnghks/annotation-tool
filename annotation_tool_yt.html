@@ -443,86 +443,95 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
         </div>
       </div>
 
-      <!-- Quickstart (collapsible) -->
+      <!-- 판단 기준 참고 -->
       <div class="panel-section">
-        <button class="qs-toggle" id="qsToggle" onclick="toggleQS()">
-          <span>판단 기준 참고</span>
-          <span class="arrow" id="qsArrow">&#9660;</span>
-        </button>
-        <div class="qs-body hidden" id="qsBody">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px;">판단 기준 참고</div>
 
-          <!-- 3단계 질문 -->
-          <div class="qs-section-title" style="margin-top:10px;">경계 판단 — 3단계 질문</div>
-          <div class="qs-questions">
-            <div class="qs-q pass">
-              <div class="q-badge">Q1</div>
-              <div class="q-body">
-                <strong>게임 상태가 변화하지 않았는가?</strong>
-                <span>게임 시스템이 플레이어에게 무엇을 요구하는가가 바뀌는 시점인가?</span>
-              </div>
-            </div>
-            <div class="qs-q pass">
-              <div class="q-badge">Q2</div>
-              <div class="q-body">
-                <strong>동일 상태 내 미시 이벤트인가?</strong>
-                <span>전투 중 타격, 탐색 중 채집 등</span>
-              </div>
-            </div>
-            <div class="qs-q pass">
-              <div class="q-badge">Q3</div>
-              <div class="q-body">
-                <strong>게임 세계가 일시정지·대기 상태로 전환되지 않는가?</strong>
-                <span>게임이 멈추거나 대기 상태로 바뀌면 경계 (로딩, 메뉴 등)</span>
-              </div>
+        <!-- 3단계 질문 -->
+        <div class="qs-section-title" style="margin-top:0;">경계 판단 — 3단계 질문</div>
+        <div class="qs-questions">
+          <div class="qs-q pass">
+            <div class="q-badge">Q1</div>
+            <div class="q-body">
+              <strong>게임 상태가 변화하지 않았는가?</strong>
+              <span>게임 시스템이 플레이어에게 무엇을 요구하는가가 바뀌는 시점인가?</span>
             </div>
           </div>
-          <div class="qs-pass-note">세 질문 모두 통과 → 경계 표시 후 카테고리 선택</div>
-
-          <!-- 카테고리 기준 -->
-          <div class="qs-section-title">카테고리 선택</div>
-          <div class="qs-tags" style="flex-wrap:wrap;">
-            <div class="qs-tag-card" style="border-color:#6366f1;min-width:80px;">
-              <div class="tag-name" style="color:#6366f1;font-size:12px;">Exploration</div>
-            </div>
-            <div class="qs-tag-card" style="border-color:#ef4444;min-width:80px;">
-              <div class="tag-name" style="color:#ef4444;font-size:12px;">Combat</div>
-            </div>
-            <div class="qs-tag-card" style="border-color:#f59e0b;min-width:80px;">
-              <div class="tag-name" style="color:#d97706;font-size:12px;">Narrative</div>
-            </div>
-            <div class="qs-tag-card" style="border-color:#8b5cf6;min-width:80px;">
-              <div class="tag-name" style="color:#8b5cf6;font-size:12px;">Menu/UI</div>
-            </div>
-            <div class="qs-tag-card" style="border-color:#6b7280;min-width:80px;">
-              <div class="tag-name" style="color:#6b7280;font-size:12px;">Other</div>
+          <div class="qs-q pass">
+            <div class="q-badge">Q2</div>
+            <div class="q-body">
+              <strong>동일 상태 내 미시 이벤트인가?</strong>
+              <span>전투 중 타격, 탐색 중 채집 등</span>
             </div>
           </div>
-
-          <!-- 예시 -->
-          <div class="qs-section-title">빠른 예시</div>
-          <div class="qs-ex">
-            <div class="qs-ex-col">
-              <div class="ex-head" style="color:#059669;">✓ 경계</div>
-              <ul>
-                <li>전투 시작 / 종료 후 복귀</li>
-                <li>컷씬 진입 / 종료</li>
-                <li>보스 페이즈 전환</li>
-                <li>새 지역·스테이지 진입</li>
-                <li>로딩 화면 진입 / 종료</li>
-              </ul>
-            </div>
-            <div class="qs-ex-col">
-              <div class="ex-head" style="color:#ef4444;">✗ 아님</div>
-              <ul>
-                <li>전투 중 타격·스킬</li>
-                <li>아이템 채집</li>
-                <li>게임 진행 중 UI 조작</li>
-                <li>카메라 이동</li>
-              </ul>
+          <div class="qs-q pass">
+            <div class="q-badge">Q3</div>
+            <div class="q-body">
+              <strong>게임 세계가 일시정지·대기 상태로 전환되지 않는가?</strong>
+              <span>게임이 멈추거나 대기 상태로 바뀌면 경계 (로딩, 메뉴 등)</span>
             </div>
           </div>
-
         </div>
+        <div class="qs-pass-note">세 질문 모두 통과 → 경계 표시 후 카테고리 선택</div>
+
+        <!-- 카테고리 기준 -->
+        <div class="qs-section-title">카테고리 선택 (경계 이후 구간)</div>
+        <div class="qs-tags" style="flex-wrap:wrap;">
+          <div class="qs-tag-card" style="border-color:#6366f1;min-width:80px;">
+            <div class="tag-name" style="color:#6366f1;font-size:12px;">Exploration</div>
+            <div class="tag-crit" style="font-size:10px;">자유 탐색·이동</div>
+          </div>
+          <div class="qs-tag-card" style="border-color:#ef4444;min-width:80px;">
+            <div class="tag-name" style="color:#ef4444;font-size:12px;">Combat</div>
+            <div class="tag-crit" style="font-size:10px;">전투·보스전</div>
+          </div>
+          <div class="qs-tag-card" style="border-color:#f59e0b;min-width:80px;">
+            <div class="tag-name" style="color:#d97706;font-size:12px;">Narrative</div>
+            <div class="tag-crit" style="font-size:10px;">컷씬·대화</div>
+          </div>
+          <div class="qs-tag-card" style="border-color:#8b5cf6;min-width:80px;">
+            <div class="tag-name" style="color:#8b5cf6;font-size:12px;">Menu/UI</div>
+            <div class="tag-crit" style="font-size:10px;">메뉴·로딩</div>
+          </div>
+          <div class="qs-tag-card" style="border-color:#6b7280;min-width:80px;">
+            <div class="tag-name" style="color:#6b7280;font-size:12px;">Other</div>
+            <div class="tag-crit" style="font-size:10px;">해당 없음</div>
+          </div>
+        </div>
+
+        <!-- 판단 예시 -->
+        <div class="qs-section-title">판단 예시</div>
+        <div class="qs-ex">
+          <div class="qs-ex-col">
+            <div class="ex-head" style="color:#059669;">✓ 경계 (→ 카테고리)</div>
+            <ul>
+              <li>전투 시작 → <strong style="color:#ef4444;">Combat</strong></li>
+              <li>전투 종료·탐색 복귀 → <strong style="color:#6366f1;">Exploration</strong></li>
+              <li>컷씬·대화 진입 → <strong style="color:#d97706;">Narrative</strong></li>
+              <li>보스 페이즈 전환 → <strong style="color:#ef4444;">Combat</strong></li>
+              <li>새 지역 진입 → <strong style="color:#6366f1;">Exploration</strong></li>
+              <li>로딩 화면 → <strong style="color:#8b5cf6;">Menu/UI</strong></li>
+            </ul>
+          </div>
+          <div class="qs-ex-col">
+            <div class="ex-head" style="color:#ef4444;">✗ 경계 아님</div>
+            <ul>
+              <li>전투 중 타격·스킬</li>
+              <li>아이템 채집</li>
+              <li>게임 진행 중 UI 조작</li>
+              <li>카메라 이동</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 주의사항 -->
+        <div class="qs-section-title">주의사항</div>
+        <div class="qs-tip" style="font-size:11px;">
+          <strong>진입 시점</strong>을 표시합니다 (종료 시점 아님).<br>
+          카테고리는 <strong>경계 이후 구간</strong> 기준으로 선택하세요.<br>
+          애매하면 표시하고 Note에 메모를 남기세요.
+        </div>
+
       </div>
 
     </div><!-- end player-right -->
