@@ -129,8 +129,10 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
 .ann-time:hover { color: #1d4ed8; }
 .ann-cat { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #e0e7ff; color: #3730a3; }
 .ann-note { font-size: 11px; color: #666; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ann-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 15px; padding: 0 4px; line-height: 1; margin-left: auto; }
+.ann-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 15px; padding: 0 4px; line-height: 1; }
 .ann-del:hover { color: #ef4444; }
+.ann-edit { background: none; border: none; color: #ccc; cursor: pointer; font-size: 12px; padding: 0 4px; line-height: 1; margin-left: auto; }
+.ann-edit:hover { color: #2563eb; }
 
 /* Quickstart (in-player, collapsible) */
 .qs-toggle { width: 100%; display: flex; justify-content: space-between; align-items: center; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 600; padding: 0; color: #1a1a2e; }
@@ -556,6 +558,7 @@ let videoList = [];
 let currentIdx = 0;
 let allAnnotations = {};
 let pendingTime = null;
+let editingId = null; // 수정 중인 annotation id
 let ytPlayer = null;
 let ytReady = false;
 let timeInterval = null;
@@ -940,7 +943,10 @@ function markTimestamp() {
 
 function cancelPending() {
   document.getElementById('pendingBox').classList.add('hidden');
+  document.getElementById('pendingCategory').value = '';
+  document.getElementById('pendingNote').value = '';
   pendingTime = null;
+  editingId = null;
 }
 
 function confirmAnnotation() {
@@ -951,6 +957,15 @@ function confirmAnnotation() {
   if (!category) { document.getElementById('pendingCategory').focus(); return; }
   const note = document.getElementById('pendingNote').value.trim();
   if (!allAnnotations[vid]) allAnnotations[vid] = [];
+
+  if (editingId != null) {
+    // 수정 모드: 기존 항목 삭제 후 교체
+    const oldAnn = allAnnotations[vid].find(a => a.id === editingId);
+    allAnnotations[vid] = allAnnotations[vid].filter(a => a.id !== editingId);
+    if (oldAnn) sheetDelete(oldAnn);
+    editingId = null;
+  }
+
   const ann = { time: pendingTime, category, note, id: Math.round(pendingTime * 1000) };
   allAnnotations[vid].push(ann);
   allAnnotations[vid].sort((a, b) => a.time - b.time);
@@ -961,6 +976,20 @@ function confirmAnnotation() {
   renderAnnotations();
   renderProgressMarkers();
   sheetAdd(ann);
+}
+
+function editAnn(id) {
+  const vid = currentVideo()?.video_id;
+  if (!vid || !allAnnotations[vid]) return;
+  const ann = allAnnotations[vid].find(a => a.id === id);
+  if (!ann) return;
+  editingId = id;
+  pendingTime = ann.time;
+  document.getElementById('pendingTime').textContent = fmtFull(ann.time);
+  document.getElementById('pendingCategory').value = ann.category || '';
+  document.getElementById('pendingNote').value = ann.note || '';
+  document.getElementById('pendingBox').classList.remove('hidden');
+  document.getElementById('pendingCategory').focus();
 }
 
 function deleteAnn(id) {
@@ -1004,7 +1033,8 @@ function renderAnnotations() {
       + '<span class="ann-time" onclick="jumpTo(' + a.time + ')">' + fmtFull(a.time) + '</span>'
       + '<span class="ann-cat" style="background:' + catBg + ';color:' + catColor + ';border:1px solid ' + catColor + '66">' + (a.category || '-') + '</span>'
       + (a.note ? '<span class="ann-note" title="' + a.note.replace(/"/g,'&quot;') + '">' + a.note + '</span>' : '')
-      + '<button class="ann-del" onclick="deleteAnn(' + a.id + ')">×</button>'
+      + '<button class="ann-edit" onclick="editAnn(' + a.id + ')" title="수정">✎</button>'
+      + '<button class="ann-del" onclick="deleteAnn(' + a.id + ')" title="삭제">×</button>'
       + '</div>';
   });
   list.innerHTML = html;
