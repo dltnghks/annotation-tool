@@ -581,6 +581,8 @@ let currentIdx = 0;
 let allAnnotations = {};
 let completedVideos = new Set();
 let pendingTime = null;
+let sheetQueue = Promise.resolve();
+function queueSheet(fn) { sheetQueue = sheetQueue.then(() => fn()); }
 let editingId = null; // 수정 중인 annotation id
 let ytPlayer = null;
 let ytReady = false;
@@ -688,7 +690,7 @@ async function sheetDelete(ann) {
 }
 
 // ── 완료 표시 (경계 없음) ──
-async function markNoEdge() {
+function markNoEdge() {
   const vid = currentVideo()?.video_id;
   if (!vid) return;
   const aid = getAnnotatorId();
@@ -701,18 +703,12 @@ async function markNoEdge() {
   renderIndexBar();
   renderAnnotations();
   updateNoEdgeButton();
-  try {
-    await fetch(WEBAPP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: isCompleted ? 'deleteCompleted' : 'addCompleted',
-        token: SECRET_TOKEN,
-        video_id: vid,
-        annotator_id: aid
-      })
-    });
-  } catch(e) { console.error('completed 저장 오류', e); }
+  const action = isCompleted ? 'deleteCompleted' : 'addCompleted';
+  queueSheet(() => fetch(WEBAPP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action, token: SECRET_TOKEN, video_id: vid, annotator_id: aid })
+  }).catch(e => console.error('completed 저장 오류', e)));
 }
 
 function updateNoEdgeButton() {
@@ -1037,7 +1033,7 @@ function cancelPending() {
   editingId = null;
 }
 
-async function confirmAnnotation() {
+function confirmAnnotation() {
   if (pendingTime == null) return;
   const vid = currentVideo()?.video_id;
   if (!vid) return;
@@ -1050,7 +1046,7 @@ async function confirmAnnotation() {
     // 수정 모드: 기존 항목 삭제 후 교체
     const oldAnn = allAnnotations[vid].find(a => a.id === editingId);
     allAnnotations[vid] = allAnnotations[vid].filter(a => a.id !== editingId);
-    if (oldAnn) await sheetDelete(oldAnn);
+    if (oldAnn) queueSheet(() => sheetDelete(oldAnn));
     editingId = null;
   }
 
@@ -1063,7 +1059,7 @@ async function confirmAnnotation() {
   document.getElementById('pendingNote').value = '';
   renderAnnotations();
   renderProgressMarkers();
-  await sheetAdd(ann);
+  queueSheet(() => sheetAdd(ann));
 }
 
 function editAnn(id) {
@@ -1087,7 +1083,7 @@ function deleteAnn(id) {
   allAnnotations[vid] = allAnnotations[vid].filter(a => a.id !== id);
   renderAnnotations();
   renderProgressMarkers();
-  if (ann) sheetDelete(ann);
+  if (ann) queueSheet(() => sheetDelete(ann));
 }
 
 function jumpTo(t) {
@@ -1189,7 +1185,7 @@ function loadVideo(idx) {
   if (!hasStart) {
     const startAnn = { time: 0, category: '', note: '', id: 0 };
     allAnnotations[v.video_id].unshift(startAnn);
-    sheetAdd(startAnn);
+    queueSheet(() => sheetAdd(startAnn));
   }
 
   createPlayer(v.youtube_id, v.start, v.end);
