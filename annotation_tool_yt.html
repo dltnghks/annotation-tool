@@ -135,6 +135,7 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
 .ann-empty { padding: 20px 12px; text-align: center; color: #aaa; font-size: 13px; background: #fafafa; border-radius: 8px; }
 .ann-list-wrap { max-height: 260px; overflow-y: auto; }
 .ann-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; }
+.ann-item.no-cat { background: #fff1f2 !important; border: 1px solid #fca5a5; }
 .ann-item:nth-child(odd) { background: #fafafa; }
 .ann-time { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500; min-width: 60px; cursor: pointer; color: #2563eb; text-decoration: underline; text-decoration-color: #bfdbfe; }
 .ann-time:hover { color: #1d4ed8; }
@@ -1099,7 +1100,7 @@ function renderAnnotations() {
   anns.forEach((a) => {
     const catColor = CAT_COLOR[a.category] || '#888';
     const catBg = a.category ? catColor + '22' : '#f3f4f6';
-    html += '<div class="ann-item">'
+    html += '<div class="ann-item' + (!a.category ? ' no-cat' : '') + '">'
       + '<span class="ann-time" onclick="jumpTo(' + a.time + ')">' + fmtFull(a.time) + '</span>'
       + '<span class="ann-cat" style="background:' + catBg + ';color:' + catColor + ';border:1px solid ' + catColor + '66">' + (a.category || '-') + '</span>'
       + (a.note ? '<span class="ann-note" title="' + a.note.replace(/"/g,'&quot;') + '">' + a.note + '</span>' : '')
@@ -1170,6 +1171,15 @@ function loadVideo(idx) {
   rateIdx = 3;
   document.getElementById('btnRate').innerHTML = '1x <kbd>R</kbd>';
   document.getElementById('btnRate').classList.remove('active');
+
+  // 0초 마크가 없으면 자동 추가 (카테고리 미지정)
+  if (!allAnnotations[v.video_id]) allAnnotations[v.video_id] = [];
+  const hasStart = allAnnotations[v.video_id].some(a => a.time === 0);
+  if (!hasStart) {
+    const startAnn = { time: 0, category: '', note: '', id: 0 };
+    allAnnotations[v.video_id].unshift(startAnn);
+    sheetAdd(startAnn);
+  }
 
   createPlayer(v.youtube_id, v.start, v.end);
   renderAnnotations();
