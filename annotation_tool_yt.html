@@ -476,21 +476,21 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
             <div class="q-badge">Q1</div>
             <div class="q-body">
               <strong>게임 상태가 실제로 변화했는가?</strong>
-              <span>플레이어의 개별 조작이 아니라, 게임 자체의 상태가 달라져야 합니다.</span>
+              <span>플레이어의 개별 조작이 아니라, 게임 자체의 상태가 달라져야 합니다.<br>게임 상태의 변화란 게임 시스템이 플레이어에게 무엇을 요구하는가가 바뀌는 것을 말합니다.</span>
             </div>
           </div>
           <div class="qs-q pass">
             <div class="q-badge">Q2</div>
             <div class="q-body">
               <strong>이 변화가 동일 상태 내부의 미시 이벤트가 아닌가?</strong>
-              <span>예: 전투 중 개별 타격, 탐색 중 채집, 이동 중 짧은 회피나 점프</span>
+              <span>같은 상태 안에서 반복되는 작은 이벤트는 경계가 아닙니다.<br>예: 전투 중 개별 타격, 탐색 중 채집</span>
             </div>
           </div>
           <div class="qs-q pass">
             <div class="q-badge">Q3</div>
             <div class="q-body">
               <strong>이 변화가 플레이의 주된 맥락을 새롭게 형성하는가?</strong>
-              <span>짧거나 부수적인 변화가 아니라, 이전 구간과 구별되는 새로운 플레이 맥락이 형성되어야 합니다.</span>
+              <span>짧거나 부수적인 변화가 아니라, 이전 구간과 구별되는 새로운 플레이 맥락이 형성되어야 합니다.<br>예: 탐색에서 전투로 전환, 전투에서 컷신으로 전환, 플레이 흐름을 끊고 인벤토리/맵/장비 관리로 들어가는 경우는 경계가 될 수 있습니다.<br>반면, 잠깐 스킬창이나 맵을 열어 확인하고 바로 복귀하는 경우처럼 게임 흐름을 실질적으로 바꾸지 않는 경우는 경계가 아닙니다.</span>
             </div>
           </div>
         </div>
@@ -501,23 +501,23 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
         <div class="qs-tags" style="flex-wrap:wrap;">
           <div class="qs-tag-card" style="border-color:#6366f1;min-width:80px;">
             <div class="tag-name" style="color:#6366f1;font-size:12px;">Exploration</div>
-            <div class="tag-crit" style="font-size:10px;">자유 탐색·이동</div>
+            <div class="tag-crit" style="font-size:10px;">자유 탐색, 이동, 퀘스트 수행 등</div>
           </div>
           <div class="qs-tag-card" style="border-color:#ef4444;min-width:80px;">
             <div class="tag-name" style="color:#ef4444;font-size:12px;">Combat</div>
-            <div class="tag-crit" style="font-size:10px;">전투·보스전</div>
+            <div class="tag-crit" style="font-size:10px;">전투, 보스전 등 전투 상태</div>
           </div>
           <div class="qs-tag-card" style="border-color:#f59e0b;min-width:80px;">
             <div class="tag-name" style="color:#d97706;font-size:12px;">Narrative</div>
-            <div class="tag-crit" style="font-size:10px;">컷씬·대화</div>
+            <div class="tag-crit" style="font-size:10px;">컷씬, 대화, 스토리 연출</div>
           </div>
           <div class="qs-tag-card" style="border-color:#8b5cf6;min-width:80px;">
             <div class="tag-name" style="color:#8b5cf6;font-size:12px;">Menu/UI</div>
-            <div class="tag-crit" style="font-size:10px;">메뉴·로딩</div>
+            <div class="tag-crit" style="font-size:10px;">메뉴, 로딩화면, 일시정지 등</div>
           </div>
           <div class="qs-tag-card" style="border-color:#6b7280;min-width:80px;">
             <div class="tag-name" style="color:#6b7280;font-size:12px;">Other</div>
-            <div class="tag-crit" style="font-size:10px;">해당 없음</div>
+            <div class="tag-crit" style="font-size:10px;">위 항목에 해당하지 않는 경우</div>
           </div>
         </div>
 
@@ -530,17 +530,19 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
               <li>전투 시작 → <strong style="color:#ef4444;">Combat</strong></li>
               <li>전투 종료·탐색 복귀 → <strong style="color:#6366f1;">Exploration</strong></li>
               <li>컷씬·대화 진입 → <strong style="color:#d97706;">Narrative</strong></li>
+              <li>컷씬·대화 종료 → 이후 구간에 맞게 선택</li>
               <li>보스 페이즈 전환 → <strong style="color:#ef4444;">Combat</strong></li>
               <li>새 지역 진입 → <strong style="color:#6366f1;">Exploration</strong></li>
-              <li>로딩 화면 → <strong style="color:#8b5cf6;">Menu/UI</strong></li>
+              <li>로딩 화면 진입/종료 → <strong style="color:#8b5cf6;">Menu/UI</strong></li>
             </ul>
           </div>
           <div class="qs-ex-col">
             <div class="ex-head" style="color:#ef4444;">✗ 경계 아님</div>
             <ul>
-              <li>전투 중 타격·스킬</li>
-              <li>아이템 채집</li>
-              <li>카메라 이동</li>
+              <li>전투 중 개별 타격·스킬 사용</li>
+              <li>탐색 중 아이템 채집</li>
+              <li>게임 세계가 계속 진행되는 중의 UI 조작</li>
+              <li>카메라 이동 (게임 상태 변화 없음)</li>
             </ul>
           </div>
         </div>
@@ -550,6 +552,7 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
         <div class="qs-tip" style="font-size:11px;">
           <strong>진입 시점</strong>을 표시합니다 (종료 시점 아님).<br>
           카테고리는 <strong>경계 이후 구간</strong> 기준으로 선택하세요.<br>
+          영상 전체에 걸쳐 <strong>동일한 기준</strong>을 적용하세요. 일관성이 가장 중요합니다.<br>
           애매하면 표시하고 Note에 메모를 남기세요.
         </div>
 
