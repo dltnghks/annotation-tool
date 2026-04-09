@@ -207,6 +207,7 @@ header span { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', mon
           <label>최소 동의 수:</label>
           <input type="range" id="gtMinAgree" min="1" max="5" value="2" oninput="onGTMinChange()">
           <span class="val-display" id="gtMinVal">2명</span>
+          <button onclick="exportGT()" style="padding:6px 14px;background:#1a1a2e;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:8px;">전체 GT JSON 추출</button>
         </div>
         <div class="gt-legend" id="gtLegend"></div>
         <div class="timeline-wrap">
@@ -545,6 +546,37 @@ function computeGT(vid, tol, minAgree) {
       const topCat = Object.entries(catCount).sort((a,b) => b[1]-a[1])[0]?.[0] || '';
       return { time: avgTime, category: topCat, count: new Set(c.map(a => a.annotator_id)).size };
     });
+}
+
+function exportGT() {
+  const tol = Number(document.getElementById('gtTolerance').value);
+  const minAgree = Number(document.getElementById('gtMinAgree').value);
+
+  const result = videoList.map(v => {
+    const bounds = computeGT(v.video_id, tol, minAgree);
+    return {
+      video_id: v.video_id,
+      youtube_id: v.youtube_id,
+      start: v.start,
+      end: v.end,
+      tolerance_sec: tol,
+      min_agreement: minAgree,
+      gt_boundaries: bounds.map(b => ({
+        time_sec: Math.round(b.time * 1000) / 1000,
+        category: b.category,
+        agreement_count: b.count
+      }))
+    };
+  });
+
+  const json = JSON.stringify(result, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `gt_tol${tol}s_min${minAgree}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function buildTimelineSVG(vid, seg, annotatorList, showGT, tol, minAgree, gtBounds) {
