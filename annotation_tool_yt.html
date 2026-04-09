@@ -1037,7 +1037,7 @@ function cancelPending() {
   editingId = null;
 }
 
-function confirmAnnotation() {
+async function confirmAnnotation() {
   if (pendingTime == null) return;
   const vid = currentVideo()?.video_id;
   if (!vid) return;
@@ -1050,7 +1050,7 @@ function confirmAnnotation() {
     // 수정 모드: 기존 항목 삭제 후 교체
     const oldAnn = allAnnotations[vid].find(a => a.id === editingId);
     allAnnotations[vid] = allAnnotations[vid].filter(a => a.id !== editingId);
-    if (oldAnn) sheetDelete(oldAnn);
+    if (oldAnn) await sheetDelete(oldAnn);
     editingId = null;
   }
 
@@ -1063,7 +1063,7 @@ function confirmAnnotation() {
   document.getElementById('pendingNote').value = '';
   renderAnnotations();
   renderProgressMarkers();
-  sheetAdd(ann);
+  await sheetAdd(ann);
 }
 
 function editAnn(id) {
