@@ -636,8 +636,8 @@ function updateSaveStatus(state, time) {
   else if (state === 'error') el.textContent = '저장 실패 ⚠';
 }
 
-async function sheetAdd(ann) {
-  const vid = currentVideo()?.video_id;
+async function sheetAdd(ann, vid) {
+  vid = vid || currentVideo()?.video_id;
   const aid = getAnnotatorId();
   updateSaveStatus('saving');
   try {
@@ -665,8 +665,8 @@ async function sheetAdd(ann) {
   }
 }
 
-async function sheetDelete(ann) {
-  const vid = currentVideo()?.video_id;
+async function sheetDelete(ann, vid) {
+  vid = vid || currentVideo()?.video_id;
   const aid = getAnnotatorId();
   updateSaveStatus('saving');
   try {
@@ -1005,7 +1005,7 @@ function confirmAnnotation() {
     // 수정 모드: 기존 항목 삭제 후 교체
     const oldAnn = allAnnotations[vid].find(a => a.id === editingId);
     allAnnotations[vid] = allAnnotations[vid].filter(a => a.id !== editingId);
-    if (oldAnn) queueSheet(() => sheetDelete(oldAnn));
+    if (oldAnn) queueSheet(() => sheetDelete(oldAnn, vid));
     editingId = null;
   }
 
@@ -1018,7 +1018,7 @@ function confirmAnnotation() {
   document.getElementById('pendingNote').value = '';
   renderAnnotations();
   renderProgressMarkers();
-  queueSheet(() => sheetAdd(ann));
+  queueSheet(() => sheetAdd(ann, vid));
 }
 
 function editAnn(id) {
@@ -1042,7 +1042,7 @@ function deleteAnn(id) {
   allAnnotations[vid] = allAnnotations[vid].filter(a => a.id !== id);
   renderAnnotations();
   renderProgressMarkers();
-  if (ann) queueSheet(() => sheetDelete(ann));
+  if (ann) queueSheet(() => sheetDelete(ann, vid));
 }
 
 function jumpTo(t) {
@@ -1146,8 +1146,9 @@ function loadVideo(idx) {
   const hasStart = allAnnotations[v.video_id].some(a => a.time === 0);
   if (!hasStart) {
     const startAnn = { time: 0, category: '', note: '', id: 0 };
+    const startVid = v.video_id;
     allAnnotations[v.video_id].unshift(startAnn);
-    queueSheet(() => sheetAdd(startAnn));
+    queueSheet(() => sheetAdd(startAnn, startVid));
   }
 
   createPlayer(v.youtube_id, v.start, v.end);
