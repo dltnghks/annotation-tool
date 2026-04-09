@@ -1169,6 +1169,7 @@ document.addEventListener('keydown', function(e) {
   // textarea에서 Enter → confirm, Shift+Enter → 줄바꿈
   if (e.target.id === 'pendingNote') {
     if (e.code === 'Enter' && !e.shiftKey) { e.preventDefault(); confirmAnnotation(); }
+    else if (e.code === 'Escape') { e.preventDefault(); cancelPending(); }
     return;
   }
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
