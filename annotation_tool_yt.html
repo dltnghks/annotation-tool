@@ -677,6 +677,7 @@ async function sheetDelete(ann) {
         token: SECRET_TOKEN,
         video_id: vid,
         timestamp_ms: Math.round(ann.time * 1000),
+        category: ann.category,
         annotator_id: aid
       })
     });
