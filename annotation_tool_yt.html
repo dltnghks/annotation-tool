@@ -461,7 +461,7 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
           <kbd>R</kbd> 재생속도 &middot;
           <kbd>N</kbd> 다음 영상 &middot;
           <kbd>P</kbd> 이전 영상<br>
-          경계 표시 후: <kbd>1</kbd>Exploration <kbd>2</kbd>Combat <kbd>3</kbd>Narrative <kbd>4</kbd>Menu/UI <kbd>5</kbd>Other &middot; <kbd>Enter</kbd> 확인 &middot; <kbd>Esc</kbd> 취소
+          경계 표시 후: <kbd>1</kbd>Exploration <kbd>2</kbd>Combat <kbd>3</kbd>Narrative <kbd>4</kbd>Menu/UI <kbd>5</kbd>Other &middot; <kbd>Enter</kbd> 확인 &middot; <kbd>Esc</kbd> 취소 &middot; Note 입력 중 <kbd>Shift+Enter</kbd> 줄바꿈
         </div>
       </div>
 
@@ -1166,6 +1166,11 @@ function nextVideo() { if (currentIdx < videoList.length - 1) loadVideo(currentI
 
 // Keyboard shortcuts
 document.addEventListener('keydown', function(e) {
+  // textarea에서 Enter → confirm, Shift+Enter → 줄바꿈
+  if (e.target.id === 'pendingNote') {
+    if (e.code === 'Enter' && !e.shiftKey) { e.preventDefault(); confirmAnnotation(); }
+    return;
+  }
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
