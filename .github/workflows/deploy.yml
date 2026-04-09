@@ -16,8 +16,8 @@ jobs:
 
       - name: Inject environment variables
         run: |
-          sed -i "s|%%WEBAPP_URL%%|${{ secrets.WEBAPP_URL }}|g" annotation_tool_yt.html
-          sed -i "s|%%SECRET_TOKEN%%|${{ secrets.SECRET_TOKEN }}|g" annotation_tool_yt.html
+          sed -i "s|%%WEBAPP_URL%%|${{ secrets.WEBAPP_URL }}|g" annotation_tool_yt.html analysis.html
+          sed -i "s|%%SECRET_TOKEN%%|${{ secrets.SECRET_TOKEN }}|g" annotation_tool_yt.html analysis.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
