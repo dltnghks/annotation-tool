@@ -582,7 +582,11 @@ let allAnnotations = {};
 let completedVideos = new Set();
 let pendingTime = null;
 let sheetQueue = Promise.resolve();
-function queueSheet(fn) { sheetQueue = sheetQueue.then(() => fn()); }
+let sheetPending = 0;
+function queueSheet(fn) {
+  sheetPending++;
+  sheetQueue = sheetQueue.then(() => fn()).finally(() => { sheetPending--; });
+}
 let editingId = null; // 수정 중인 annotation id
 let ytPlayer = null;
 let ytReady = false;
@@ -1224,6 +1228,13 @@ document.addEventListener('keydown', function(e) {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/annotation-tool/sw.js');
 }
+
+window.addEventListener('beforeunload', e => {
+  if (sheetPending > 0) {
+    e.preventDefault();
+    e.returnValue = '저장 중인 데이터가 있습니다. 페이지를 닫으면 데이터가 유실될 수 있습니다.';
+  }
+});
 </script>
 </body>
 </html>
