@@ -373,6 +373,7 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
           <span id="navRange" class="nav-range"></span>
           <span id="navProgress" class="nav-progress"></span>
         </div>
+        <button id="btnNoEdge" class="btn-no-edge" onclick="markNoEdge()">경계 없음 ✓</button>
         <button class="nav-btn" onclick="nextVideo()" id="btnNext">다음 &rarr;</button>
       </div>
 
@@ -435,11 +436,6 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
       <div class="panel-section">
         <div class="ann-header">
           <h3>Annotations (<span id="annCount">0</span>)</h3>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <button id="btnNoEdge" class="btn-no-edge" onclick="markNoEdge()">경계 없음 ✓</button>
-            <button id="btnExport" class="btn-export hidden" onclick="exportCSV()">이 영상 CSV</button>
-            <button id="btnExportAll" class="btn-export-all hidden" onclick="exportAllCSV()">전체 CSV</button>
-          </div>
         </div>
         <div class="ann-list-wrap">
           <div id="annList">
@@ -1092,20 +1088,13 @@ function renderAnnotations() {
   const anns = currentAnnotations();
   const list = document.getElementById('annList');
   const count = document.getElementById('annCount');
-  const btn = document.getElementById('btnExport');
-  const btnAll = document.getElementById('btnExportAll');
   count.textContent = anns.length;
-
-  const totalAnns = Object.values(allAnnotations).reduce((s, a) => s + a.length, 0);
-  if (totalAnns > 0) btnAll.classList.remove('hidden'); else btnAll.classList.add('hidden');
   renderIndexBar();
 
   if (anns.length === 0) {
     list.innerHTML = '<div class="ann-empty">영상을 재생하고 M 키로 경계를 표시하세요</div>';
-    btn.classList.add('hidden');
     return;
   }
-  btn.classList.remove('hidden');
   let html = '';
   anns.forEach((a) => {
     const catColor = CAT_COLOR[a.category] || '#888';
