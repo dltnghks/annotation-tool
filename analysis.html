@@ -616,7 +616,6 @@ function buildSelects() {
   const vidOpts = videoList.map(v => `<option value="${v.video_id}">${v.video_id}</option>`).join('');
   document.getElementById('timelineVideo').innerHTML = vidOpts;
   document.getElementById('gtVideo').innerHTML = vidOpts;
-  const baseIds = [...new Set(videoList.map(v => baseId(v.video_id)))].sort();
   document.getElementById('catPieVideo').innerHTML = baseIds.map(b => `<option value="${b}">${b}</option>`).join('');
 
   document.getElementById('catPieAnnotator').innerHTML =
