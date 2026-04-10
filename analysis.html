@@ -233,6 +233,17 @@ header span { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', mon
           <span class="val-display" id="gtMinVal">2명</span>
           <button onclick="exportGT()" style="padding:6px 14px;background:#1a1a2e;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:8px;">전체 GT JSON 추출</button>
         </div>
+        <div class="controls" style="margin-bottom:12px;">
+          <label>어노테이터 제외:</label>
+          <select id="gtExcludeMode" onchange="onGTExcludeModeChange()">
+            <option value="none">없음</option>
+            <option value="auto" selected>자동 (일관성 최저)</option>
+            <option value="manual">수동 선택</option>
+          </select>
+          <select id="gtExcludeManual" onchange="renderGT()" style="display:none;">
+            <option value="">— 선택 —</option>
+          </select>
+        </div>
         <div class="gt-legend" id="gtLegend"></div>
         <div class="timeline-wrap">
           <div id="gtSvg" class="timeline-svg-wrap"></div>
@@ -568,6 +579,10 @@ function buildSelects() {
   gtMin.max = annotators.length;
   gtMin.value = Math.max(2, Math.ceil(annotators.length / 2));
   document.getElementById('gtMinVal').textContent = gtMin.value + '명';
+
+  document.getElementById('gtExcludeManual').innerHTML =
+    '<option value="">— 선택 —</option>' +
+    annotators.map(a => `<option value="${a}">${a}</option>`).join('');
 }
 
 // ── Category by video ──
@@ -617,6 +632,25 @@ function onGTMinChange() {
   document.getElementById('gtMinVal').textContent = v + '명';
   renderGT();
 }
+function onGTExcludeModeChange() {
+  const mode = document.getElementById('gtExcludeMode').value;
+  document.getElementById('gtExcludeManual').style.display = mode === 'manual' ? '' : 'none';
+  renderGT();
+}
+
+function getGTExcluded(tol) {
+  const mode = document.getElementById('gtExcludeMode').value;
+  if (mode === 'none') return null;
+  if (mode === 'auto') {
+    const consistency = computeConsistency(tol);
+    return consistency.length ? consistency[consistency.length - 1].annotator_id : null;
+  }
+  if (mode === 'manual') {
+    const val = document.getElementById('gtExcludeManual').value;
+    return val || null;
+  }
+  return null;
+}
 
 function renderGT() {
   const vid = document.getElementById('gtVideo').value;
@@ -626,15 +660,11 @@ function renderGT() {
   const seg = videoList.find(v => v.video_id === vid);
   if (!seg) { container.innerHTML = '<div class="empty-msg">영상 정보 없음</div>'; return; }
 
-  // Auto-exclude lowest consistency annotator
-  const consistency = computeConsistency(tol);
-  const excluded = consistency.length ? consistency[consistency.length - 1].annotator_id : null;
+  const excluded = getGTExcluded(tol);
   const activeAnnotators = excluded ? annotators.filter(a => a !== excluded) : annotators;
 
-  // Build GT boundaries using only active annotators
   const gtBounds = computeGT(vid, tol, minAgree, activeAnnotators);
 
-  // Legend
   const legend = document.getElementById('gtLegend');
   legend.innerHTML = annotators.map((aid, i) => {
     const isExcluded = aid === excluded;
@@ -692,8 +722,7 @@ function exportGT() {
   const tol = Number(document.getElementById('gtTolerance').value);
   const minAgree = Number(document.getElementById('gtMinAgree').value);
 
-  const consistency = computeConsistency(tol);
-  const excluded = consistency.length ? consistency[consistency.length - 1].annotator_id : null;
+  const excluded = getGTExcluded(tol);
   const activeAnnotators = excluded ? annotators.filter(a => a !== excluded) : annotators;
 
   const meta = {
