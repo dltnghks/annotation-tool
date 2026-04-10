@@ -764,42 +764,39 @@ function renderGT() {
 
 function computeGT(vid, tol, minAgree, activeAnnotators) {
   const annSet = activeAnnotators ? new Set(activeAnnotators) : null;
-  // Collect all non-start boundaries from active annotators
   const allBounds = allAnns.filter(a => a.video_id === vid && a.time > 0 && (!annSet || annSet.has(a.annotator_id)));
   if (!allBounds.length) return [];
 
-  // Sort by time
-  const sorted = [...allBounds].sort((a, b) => a.time - b.time);
+  // For each boundary, compute support group (all boundaries within tolerance)
+  const groups = allBounds.map(anchor => {
+    const neighbors = allBounds.filter(b => Math.abs(b.time - anchor.time) <= tol);
+    return { anchor, neighbors, count: new Set(neighbors.map(b => b.annotator_id)).size };
+  });
 
-  // Greedy clustering with tolerance window
-  const clusters = [];
-  const used = new Set();
-  for (let i = 0; i < sorted.length; i++) {
-    if (used.has(i)) continue;
-    const cluster = [sorted[i]];
-    used.add(i);
-    for (let j = i + 1; j < sorted.length; j++) {
-      if (used.has(j)) continue;
-      if (sorted[j].time - sorted[i].time > tol * 2) break;
-      if (Math.abs(sorted[j].time - sorted[i].time) <= tol) {
-        cluster.push(sorted[j]);
-        used.add(j);
-      }
-    }
-    clusters.push(cluster);
+  // NMS: pick highest-agreement group first, suppress overlapping boundaries
+  groups.sort((a, b) => b.count - a.count || a.anchor.time - b.anchor.time);
+  const suppressed = new Set();
+  const gt = [];
+
+  for (const g of groups) {
+    if (suppressed.has(g.anchor)) continue;
+    if (g.count < minAgree) break;
+
+    const active = g.neighbors.filter(b => !suppressed.has(b));
+    const activeAnnSet = new Set(active.map(b => b.annotator_id));
+    if (activeAnnSet.size < minAgree) continue;
+
+    // Suppress all boundaries within tolerance of this anchor
+    g.neighbors.forEach(b => suppressed.add(b));
+
+    const avgTime = active.reduce((s, b) => s + b.time, 0) / active.length;
+    const catCount = {};
+    active.forEach(b => { if (b.category) catCount[b.category] = (catCount[b.category] || 0) + 1; });
+    const topCat = Object.entries(catCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+    gt.push({ time: avgTime, category: topCat, count: activeAnnSet.size });
   }
 
-  // Filter clusters with enough unique annotators
-  return clusters
-    .filter(c => new Set(c.map(a => a.annotator_id)).size >= minAgree)
-    .map(c => {
-      const avgTime = c.reduce((s, a) => s + a.time, 0) / c.length;
-      // Most common category in cluster
-      const catCount = {};
-      c.forEach(a => { if (a.category) catCount[a.category] = (catCount[a.category] || 0) + 1; });
-      const topCat = Object.entries(catCount).sort((a,b) => b[1]-a[1])[0]?.[0] || '';
-      return { time: avgTime, category: topCat, count: new Set(c.map(a => a.annotator_id)).size };
-    });
+  return gt.sort((a, b) => a.time - b.time);
 }
 
 function exportGT() {
