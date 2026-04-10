@@ -95,6 +95,16 @@ header span { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', mon
 .view-toggle { display: flex; background: #e5e7eb; border-radius: 7px; padding: 3px; gap: 2px; }
 .view-toggle-btn { padding: 5px 14px; border-radius: 5px; border: none; background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; color: #64748b; transition: all 0.15s; }
 .view-toggle-btn.active { background: #fff; color: #1a1a2e; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+/* Summary table */
+.summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.summary-table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e5e7eb; }
+.summary-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-family: 'IBM Plex Mono', monospace; }
+.summary-table tr:last-child td { border-bottom: none; }
+.summary-table tr:hover td { background: #f8fafc; }
+.summary-table td:first-child { font-weight: 600; color: #2563eb; }
+.summary-table .num { text-align: right; }
+.f1-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -183,6 +193,22 @@ header span { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', mon
 
     <!-- ── Tab: Video ── -->
     <div id="tab-video" class="tab-panel">
+
+      <div class="section">
+        <div class="section-title">게임 영상별 요약</div>
+        <div style="overflow-x:auto;">
+          <table class="summary-table" id="videoSummaryTable">
+            <thead><tr>
+              <th>Video ID</th>
+              <th class="num">클립 수</th>
+              <th class="num">총 경계 수</th>
+              <th class="num">클립당 평균</th>
+              <th class="num">평균 일치도</th>
+            </tr></thead>
+            <tbody id="videoSummaryBody"></tbody>
+          </table>
+        </div>
+      </div>
 
       <div class="section" style="padding:16px 24px;">
         <div class="controls" style="margin-bottom:0;">
@@ -362,6 +388,7 @@ function buildUI() {
   renderCatByAnnotator();
   renderAgreement();
   buildSelects();
+  renderVideoSummary();
   renderBoundarySection();
   renderCatPieVideo();
   renderTimeline();
@@ -455,6 +482,7 @@ function onAgreementTolChange() {
   const v = document.getElementById('agreementTol').value;
   document.getElementById('agreementTolVal').textContent = '±' + v + 's';
   renderAgreement();
+  renderVideoSummary();
 }
 
 function getAllPairs() {
@@ -549,6 +577,46 @@ function renderAgreement() {
       </div>
     </div>`;
   }).join('');
+}
+
+// ── Video summary table ──
+function renderVideoSummary() {
+  const tol = Number(document.getElementById('agreementTol').value);
+  const baseIds = [...new Set(videoList.map(v => baseId(v.video_id)))].sort();
+  const allPairs = getAllPairs();
+
+  const rows = baseIds.map(base => {
+    const clips = videoList.filter(v => baseId(v.video_id) === base);
+    const clipIds = clips.map(v => v.video_id);
+
+    const totalBounds = allAnns.filter(a => clipIds.includes(a.video_id) && a.time > 0).length;
+    const avgBounds = clips.length ? (totalBounds / clips.length).toFixed(1) : '—';
+
+    // Average pairwise F1 across all clips in this base group
+    const f1Scores = [];
+    allPairs.forEach(([a1, a2]) => {
+      clipIds.forEach(vid => {
+        const s = pairF1(a1, a2, vid, tol);
+        if (s !== null) f1Scores.push(s);
+      });
+    });
+    const avgF1 = f1Scores.length ? f1Scores.reduce((s, v) => s + v, 0) / f1Scores.length : null;
+    const f1Pct = avgF1 !== null ? Math.round(avgF1 * 100) : null;
+    const f1Color = f1Pct === null ? '#94a3b8' : f1Pct >= 70 ? '#10b981' : f1Pct >= 40 ? '#f59e0b' : '#ef4444';
+    const f1Text = f1Pct !== null
+      ? `<span class="f1-badge" style="background:${f1Color}20;color:${f1Color}">${f1Pct}%</span>`
+      : '<span style="color:#94a3b8;">—</span>';
+
+    return `<tr>
+      <td>${base}</td>
+      <td class="num">${clips.length}</td>
+      <td class="num">${totalBounds}</td>
+      <td class="num">${avgBounds}</td>
+      <td class="num">${f1Text}</td>
+    </tr>`;
+  });
+
+  document.getElementById('videoSummaryBody').innerHTML = rows.join('');
 }
 
 // ── Boundary section (view toggle) ──
