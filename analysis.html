@@ -90,6 +90,11 @@ header span { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', mon
 
 .hidden { display: none !important; }
 .empty-msg { color: #aaa; font-size: 13px; text-align: center; padding: 30px 0; }
+
+/* View toggle */
+.view-toggle { display: flex; background: #e5e7eb; border-radius: 7px; padding: 3px; gap: 2px; }
+.view-toggle-btn { padding: 5px 14px; border-radius: 5px; border: none; background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; color: #64748b; transition: all 0.15s; }
+.view-toggle-btn.active { background: #fff; color: #1a1a2e; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 </style>
 </head>
 <body>
@@ -190,22 +195,19 @@ header span { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', mon
       </div>
 
       <div class="section">
-        <div class="section-title">영상별 경계 수 <span>(0초 마크 제외)</span></div>
-        <div class="chart-wrap" style="overflow-x:auto;">
-          <canvas id="chartBoundaryPerVideo"></canvas>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-title">영상별 카테고리 분포 <span>(stacked)</span></div>
+        <div class="section-title">영상별 경계 분포 <span>(0초 마크 제외)</span></div>
         <div class="controls">
-          <label>어노테이터:</label>
-          <select id="catVideoAnnotator" onchange="renderCatByVideo()">
+          <div class="view-toggle" id="boundaryViewToggle">
+            <button class="view-toggle-btn active" onclick="setBoundaryView('annotator')">어노테이터별</button>
+            <button class="view-toggle-btn" onclick="setBoundaryView('category')">카테고리별</button>
+          </div>
+          <label id="catAnnotatorLabel" style="display:none;">어노테이터:</label>
+          <select id="catVideoAnnotator" onchange="renderBoundarySection()" style="display:none;">
             <option value="all">전체</option>
           </select>
         </div>
         <div style="overflow-x:auto;">
-          <canvas id="chartCatByVideo"></canvas>
+          <canvas id="chartBoundaryPerVideo"></canvas>
         </div>
       </div>
 
@@ -299,8 +301,7 @@ function onBaseVideoFilterChange() {
   const vidOpts = filtered.map(v => `<option value="${v.video_id}">${v.video_id}</option>`).join('');
   document.getElementById('timelineVideo').innerHTML = vidOpts;
   document.getElementById('gtVideo').innerHTML = vidOpts;
-  renderBoundaryPerVideo();
-  renderCatByVideo();
+  renderBoundarySection();
   renderTimeline();
   renderGT();
 }
@@ -344,9 +345,8 @@ function buildUI() {
   renderCatPie();
   renderCatByAnnotator();
   renderAgreement();
-  renderBoundaryPerVideo();
   buildSelects();
-  renderCatByVideo();
+  renderBoundarySection();
   renderTimeline();
   renderGT();
 }
@@ -534,11 +534,35 @@ function renderAgreement() {
   }).join('');
 }
 
-// ── Boundary per video ──
-function renderBoundaryPerVideo() {
+// ── Boundary section (view toggle) ──
+let boundaryView = 'annotator';
+
+function setBoundaryView(view) {
+  boundaryView = view;
+  document.querySelectorAll('#boundaryViewToggle .view-toggle-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['annotator', 'category'][i] === view);
+  });
+  const showCat = view === 'category';
+  document.getElementById('catAnnotatorLabel').style.display = showCat ? '' : 'none';
+  document.getElementById('catVideoAnnotator').style.display = showCat ? '' : 'none';
+  renderBoundarySection();
+}
+
+function renderBoundarySection() {
+  if (boundaryView === 'annotator') renderBoundaryByAnnotator();
+  else renderBoundaryByCategory();
+}
+
+// keep old name as alias for onBaseVideoFilterChange
+function renderBoundaryPerVideo() { renderBoundarySection(); }
+
+function renderBoundaryByAnnotator() {
   const vidIds = getFilteredVideoList().map(v => v.video_id);
+  const canvas = document.getElementById('chartBoundaryPerVideo');
+  canvas.style.height = '260px';
+  canvas.style.width = Math.max(600, vidIds.length * 44) + 'px';
   if (charts.boundaryPerVideo) charts.boundaryPerVideo.destroy();
-  charts.boundaryPerVideo = new Chart(document.getElementById('chartBoundaryPerVideo'), {
+  charts.boundaryPerVideo = new Chart(canvas, {
     type: 'bar',
     data: {
       labels: vidIds,
@@ -550,7 +574,8 @@ function renderBoundaryPerVideo() {
     },
     options: {
       plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
-      scales: { x: { ticks: { font: { size: 10 }, maxRotation: 45 } }, y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      scales: { x: { ticks: { font: { size: 10 }, maxRotation: 45 } }, y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+      responsive: false, maintainAspectRatio: false
     }
   });
 }
@@ -585,16 +610,18 @@ function buildSelects() {
     annotators.map(a => `<option value="${a}">${a}</option>`).join('');
 }
 
-// ── Category by video ──
-function renderCatByVideo() {
+// keep alias for onBaseVideoFilterChange
+function renderCatByVideo() { renderBoundarySection(); }
+
+function renderBoundaryByCategory() {
   const aid = document.getElementById('catVideoAnnotator').value;
   const vidIds = getFilteredVideoList().map(v => v.video_id);
-  const filtered = aid === 'all' ? allAnns : allAnns.filter(a => a.annotator_id === aid);
-  if (charts.catByVideo) charts.catByVideo.destroy();
-  const canvas = document.getElementById('chartCatByVideo');
+  const filtered = aid === 'all' ? allAnns.filter(a => a.time > 0) : allAnns.filter(a => a.annotator_id === aid && a.time > 0);
+  const canvas = document.getElementById('chartBoundaryPerVideo');
   canvas.style.height = '260px';
   canvas.style.width = Math.max(600, vidIds.length * 44) + 'px';
-  charts.catByVideo = new Chart(canvas, {
+  if (charts.boundaryPerVideo) charts.boundaryPerVideo.destroy();
+  charts.boundaryPerVideo = new Chart(canvas, {
     type: 'bar',
     data: {
       labels: vidIds,
