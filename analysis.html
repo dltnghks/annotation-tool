@@ -616,7 +616,8 @@ function buildSelects() {
   const vidOpts = videoList.map(v => `<option value="${v.video_id}">${v.video_id}</option>`).join('');
   document.getElementById('timelineVideo').innerHTML = vidOpts;
   document.getElementById('gtVideo').innerHTML = vidOpts;
-  document.getElementById('catPieVideo').innerHTML = vidOpts;
+  const baseIds = [...new Set(videoList.map(v => baseId(v.video_id)))].sort();
+  document.getElementById('catPieVideo').innerHTML = baseIds.map(b => `<option value="${b}">${b}</option>`).join('');
 
   document.getElementById('catPieAnnotator').innerHTML =
     '<option value="all">전체</option>' + annotators.map(a => `<option value="${a}">${a}</option>`).join('');
@@ -662,9 +663,9 @@ function renderBoundaryByCategory() {
 
 // ── Cat pie per video ──
 function renderCatPieVideo() {
-  const vid = document.getElementById('catPieVideo').value;
+  const base = document.getElementById('catPieVideo').value;
   const aid = document.getElementById('catPieAnnotator').value;
-  const filtered = allAnns.filter(a => a.video_id === vid && a.time > 0 && (aid === 'all' || a.annotator_id === aid));
+  const filtered = allAnns.filter(a => baseId(a.video_id) === base && a.time > 0 && (aid === 'all' || a.annotator_id === aid));
   const counts = Object.fromEntries(CATS.map(c => [c, 0]));
   filtered.forEach(a => { if (counts[a.category] != null) counts[a.category]++; });
   const total = filtered.length;
