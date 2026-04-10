@@ -73,6 +73,15 @@ header span { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', mon
 .score-bar-wrap { flex: 1; background: #e5e7eb; border-radius: 4px; height: 8px; }
 .score-bar-fill { height: 100%; border-radius: 4px; }
 .score-val { font-size: 12px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; min-width: 38px; text-align: right; }
+/* Pair ranking */
+.pair-ranking { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.pair-row { display: flex; align-items: center; gap: 12px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; }
+.pair-rank { font-size: 12px; font-weight: 700; color: #94a3b8; min-width: 24px; font-family: 'IBM Plex Mono', monospace; }
+.pair-rank.gold { color: #f59e0b; }
+.pair-name { font-size: 13px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; min-width: 100px; }
+.pair-score-bar { flex: 1; background: #e5e7eb; border-radius: 4px; height: 10px; }
+.pair-score-fill { height: 100%; border-radius: 4px; }
+.pair-score-val { font-size: 13px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; min-width: 44px; text-align: right; }
 
 /* GT legend */
 .gt-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; font-size: 12px; }
@@ -156,7 +165,12 @@ header span { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', mon
           <label>Tolerance:</label>
           <input type="range" id="agreementTol" min="1" max="10" value="3" oninput="onAgreementTolChange()">
           <span class="val-display" id="agreementTolVal">±3s</span>
+          <label>페어:</label>
+          <select id="agreementPair" onchange="renderAgreement()">
+            <option value="all">전체 평균</option>
+          </select>
         </div>
+        <div id="pairRanking" class="pair-ranking"></div>
         <div id="agreementGrid" class="agreement-grid"></div>
       </div>
 
@@ -373,25 +387,71 @@ function onAgreementTolChange() {
   renderAgreement();
 }
 
+function getAllPairs() {
+  const pairs = [];
+  for (let i = 0; i < annotators.length; i++)
+    for (let j = i + 1; j < annotators.length; j++)
+      pairs.push([annotators[i], annotators[j]]);
+  return pairs;
+}
+
+function pairScore(a1id, a2id, vid, tol) {
+  const a1 = allAnns.filter(a => a.video_id === vid && a.annotator_id === a1id && a.time > 0);
+  const a2 = allAnns.filter(a => a.video_id === vid && a.annotator_id === a2id && a.time > 0);
+  if (!a1.length && !a2.length) return null;
+  const total = Math.max(a1.length, a2.length);
+  if (!total) return null;
+  const matched = a1.filter(ann => a2.some(b => Math.abs(ann.time - b.time) <= tol)).length;
+  return matched / total;
+}
+
 function renderAgreement() {
   const tol = Number(document.getElementById('agreementTol').value);
+  const selectedPair = document.getElementById('agreementPair').value;
   const grid = document.getElementById('agreementGrid');
-  if (annotators.length < 2) { grid.innerHTML = '<div class="empty-msg">어노테이터가 2명 이상이어야 합니다.</div>'; return; }
+  const rankingEl = document.getElementById('pairRanking');
+
+  if (annotators.length < 2) {
+    grid.innerHTML = '<div class="empty-msg">어노테이터가 2명 이상이어야 합니다.</div>';
+    rankingEl.innerHTML = '';
+    return;
+  }
+
+  const allPairs = getAllPairs();
+
+  // Pair ranking (전체 영상 평균)
+  const pairAvgs = allPairs.map(([a1, a2]) => {
+    const scores = videoList.map(v => pairScore(a1, a2, v.video_id, tol)).filter(s => s !== null);
+    const avg = scores.length ? scores.reduce((s,v) => s+v, 0) / scores.length : 0;
+    return { label: a1 + ' × ' + a2, a1, a2, avg };
+  }).sort((a, b) => b.avg - a.avg);
+
+  rankingEl.innerHTML = pairAvgs.map((p, i) => {
+    const pct = Math.round(p.avg * 100);
+    const color = pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444';
+    const rankClass = i === 0 ? 'pair-rank gold' : 'pair-rank';
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1) + '.';
+    return `<div class="pair-row">
+      <div class="${rankClass}">${medal}</div>
+      <div class="pair-name">${p.label}</div>
+      <div class="pair-score-bar"><div class="pair-score-fill" style="width:${pct}%;background:${color}"></div></div>
+      <div class="pair-score-val" style="color:${color}">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  // Per-video grid
   grid.innerHTML = videoList.map(v => {
     const vid = v.video_id;
-    const pairs = [];
-    for (let i = 0; i < annotators.length; i++) {
-      for (let j = i + 1; j < annotators.length; j++) {
-        const a1 = allAnns.filter(a => a.video_id === vid && a.annotator_id === annotators[i] && a.time > 0);
-        const a2 = allAnns.filter(a => a.video_id === vid && a.annotator_id === annotators[j] && a.time > 0);
-        if (!a1.length && !a2.length) continue;
-        const matched = a1.filter(ann => a2.some(b => Math.abs(ann.time - b.time) <= tol)).length;
-        const total = Math.max(a1.length, a2.length);
-        if (total > 0) pairs.push(matched / total);
-      }
+    let scores = [];
+    if (selectedPair === 'all') {
+      scores = allPairs.map(([a1, a2]) => pairScore(a1, a2, vid, tol)).filter(s => s !== null);
+    } else {
+      const [a1, a2] = selectedPair.split('|');
+      const s = pairScore(a1, a2, vid, tol);
+      if (s !== null) scores = [s];
     }
-    if (!pairs.length) return `<div class="agreement-card"><div class="vid-id">${vid}</div><div style="font-size:11px;color:#aaa">데이터 없음</div></div>`;
-    const score = pairs.reduce((s, v) => s + v, 0) / pairs.length;
+    if (!scores.length) return `<div class="agreement-card"><div class="vid-id">${vid}</div><div style="font-size:11px;color:#aaa">데이터 없음</div></div>`;
+    const score = scores.reduce((s, v) => s + v, 0) / scores.length;
     const pct = Math.round(score * 100);
     const color = pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444';
     return `<div class="agreement-card">
@@ -429,6 +489,10 @@ function renderBoundaryPerVideo() {
 function buildSelects() {
   const catSel = document.getElementById('catVideoAnnotator');
   catSel.innerHTML = '<option value="all">전체</option>' + annotators.map(a => `<option value="${a}">${a}</option>`).join('');
+
+  const pairSel = document.getElementById('agreementPair');
+  pairSel.innerHTML = '<option value="all">전체 평균</option>' +
+    getAllPairs().map(([a1, a2]) => `<option value="${a1}|${a2}">${a1} × ${a2}</option>`).join('');
 
   const vidOpts = videoList.map(v => `<option value="${v.video_id}">${v.video_id}</option>`).join('');
   document.getElementById('timelineVideo').innerHTML = vidOpts;
