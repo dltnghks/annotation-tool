@@ -576,8 +576,9 @@ function renderBoundaryPerVideo() { renderBoundarySection(); }
 function renderBoundaryByAnnotator() {
   const vidIds = getFilteredVideoList().map(v => v.video_id);
   const canvas = document.getElementById('chartBoundaryPerVideo');
-  canvas.style.height = '260px';
-  canvas.style.width = Math.max(600, vidIds.length * 44) + 'px';
+  const w = Math.max(600, vidIds.length * 44);
+  canvas.width = w; canvas.height = 260;
+  canvas.style.width = w + 'px'; canvas.style.height = '260px';
   if (charts.boundaryPerVideo) charts.boundaryPerVideo.destroy();
   charts.boundaryPerVideo = new Chart(canvas, {
     type: 'bar',
@@ -639,8 +640,9 @@ function renderBoundaryByCategory() {
   const vidIds = getFilteredVideoList().map(v => v.video_id);
   const filtered = aid === 'all' ? allAnns.filter(a => a.time > 0) : allAnns.filter(a => a.annotator_id === aid && a.time > 0);
   const canvas = document.getElementById('chartBoundaryPerVideo');
-  canvas.style.height = '260px';
-  canvas.style.width = Math.max(600, vidIds.length * 44) + 'px';
+  const w = Math.max(600, vidIds.length * 44);
+  canvas.width = w; canvas.height = 260;
+  canvas.style.width = w + 'px'; canvas.style.height = '260px';
   if (charts.boundaryPerVideo) charts.boundaryPerVideo.destroy();
   charts.boundaryPerVideo = new Chart(canvas, {
     type: 'bar',
