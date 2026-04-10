@@ -179,6 +179,16 @@ header span { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', mon
     <!-- ── Tab: Video ── -->
     <div id="tab-video" class="tab-panel">
 
+      <div class="section" style="padding:16px 24px;">
+        <div class="controls" style="margin-bottom:0;">
+          <label style="font-weight:600;">게임 영상:</label>
+          <select id="baseVideoFilter" onchange="onBaseVideoFilterChange()">
+            <option value="all">전체</option>
+          </select>
+          <span id="baseVideoFilterInfo" style="font-size:12px;color:#64748b;font-family:'IBM Plex Mono',monospace;"></span>
+        </div>
+      </div>
+
       <div class="section">
         <div class="section-title">영상별 경계 수 <span>(0초 마크 제외)</span></div>
         <div class="chart-wrap" style="overflow-x:auto;">
@@ -262,6 +272,28 @@ function fmt(s) {
   return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
 }
 
+function baseId(vid) { return vid.replace(/_\d+$/, ''); }
+
+function getFilteredVideoList() {
+  const base = document.getElementById('baseVideoFilter')?.value || 'all';
+  if (base === 'all') return videoList;
+  return videoList.filter(v => baseId(v.video_id) === base);
+}
+
+function onBaseVideoFilterChange() {
+  const filtered = getFilteredVideoList();
+  const base = document.getElementById('baseVideoFilter').value;
+  document.getElementById('baseVideoFilterInfo').textContent =
+    base === 'all' ? `전체 ${videoList.length}개 클립` : `${filtered.length}개 클립`;
+  const vidOpts = filtered.map(v => `<option value="${v.video_id}">${v.video_id}</option>`).join('');
+  document.getElementById('timelineVideo').innerHTML = vidOpts;
+  document.getElementById('gtVideo').innerHTML = vidOpts;
+  renderBoundaryPerVideo();
+  renderCatByVideo();
+  renderTimeline();
+  renderGT();
+}
+
 // ── Load ──
 async function loadData() {
   const status = document.getElementById('loadStatus');
@@ -335,15 +367,25 @@ function renderOverview() {
 // ── Progress ──
 function renderProgress() {
   const total = videoList.length;
+  const tol = Number(document.getElementById('agreementTol').value);
+  const consistency = computeConsistency(tol);
+  const minScore = Math.min(...consistency.map(c => c.score));
   document.getElementById('progressList').innerHTML = annotators.map(aid => {
     const done = videoList.filter(v =>
       allAnns.some(a => a.video_id === v.video_id && a.annotator_id === aid && a.time === 0 && a.category)
     ).length;
     const pct = total > 0 ? Math.round(done / total * 100) : 0;
+    const cons = consistency.find(c => c.annotator_id === aid);
+    const consPct = cons ? Math.round(cons.score * 100) : 0;
+    const isLowest = annotators.length >= 2 && cons && Math.abs(cons.score - minScore) < 0.001;
+    const consColor = consPct >= 70 ? '#10b981' : consPct >= 40 ? '#f59e0b' : '#ef4444';
     return `<div class="progress-row">
       <div class="progress-name">${aid}</div>
       <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"><span>${pct}%</span></div></div>
       <div class="progress-count">${done} / ${total}</div>
+      <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:${consColor};min-width:100px;text-align:right;">
+        F1 ${consPct}%${isLowest && annotators.length > 2 ? ' <span style="color:#ef4444;font-size:10px;">최저</span>' : ''}
+      </div>
     </div>`;
   }).join('');
 }
@@ -395,14 +437,31 @@ function getAllPairs() {
   return pairs;
 }
 
-function pairScore(a1id, a2id, vid, tol) {
+function pairF1(a1id, a2id, vid, tol) {
   const a1 = allAnns.filter(a => a.video_id === vid && a.annotator_id === a1id && a.time > 0);
   const a2 = allAnns.filter(a => a.video_id === vid && a.annotator_id === a2id && a.time > 0);
   if (!a1.length && !a2.length) return null;
-  const total = Math.max(a1.length, a2.length);
-  if (!total) return null;
-  const matched = a1.filter(ann => a2.some(b => Math.abs(ann.time - b.time) <= tol)).length;
-  return matched / total;
+  if (!a1.length || !a2.length) return 0;
+  const prec = a1.filter(ann => a2.some(b => Math.abs(ann.time - b.time) <= tol)).length / a1.length;
+  const rec  = a2.filter(ann => a1.some(b => Math.abs(ann.time - b.time) <= tol)).length / a2.length;
+  if (prec + rec === 0) return 0;
+  return 2 * prec * rec / (prec + rec);
+}
+
+// 어노테이터별 전체 영상 평균 pairwise F1 (일관성 점수)
+function computeConsistency(tol) {
+  return annotators.map(aid => {
+    const others = annotators.filter(a => a !== aid);
+    const scores = [];
+    others.forEach(other => {
+      videoList.forEach(v => {
+        const s = pairF1(aid, other, v.video_id, tol);
+        if (s !== null) scores.push(s);
+      });
+    });
+    const avg = scores.length ? scores.reduce((s,v) => s+v, 0) / scores.length : 0;
+    return { annotator_id: aid, score: avg };
+  }).sort((a, b) => b.score - a.score);
 }
 
 function renderAgreement() {
@@ -421,7 +480,7 @@ function renderAgreement() {
 
   // Pair ranking (전체 영상 평균)
   const pairAvgs = allPairs.map(([a1, a2]) => {
-    const scores = videoList.map(v => pairScore(a1, a2, v.video_id, tol)).filter(s => s !== null);
+    const scores = videoList.map(v => pairF1(a1, a2, v.video_id, tol)).filter(s => s !== null);
     const avg = scores.length ? scores.reduce((s,v) => s+v, 0) / scores.length : 0;
     return { label: a1 + ' × ' + a2, a1, a2, avg };
   }).sort((a, b) => b.avg - a.avg);
@@ -444,10 +503,10 @@ function renderAgreement() {
     const vid = v.video_id;
     let scores = [];
     if (selectedPair === 'all') {
-      scores = allPairs.map(([a1, a2]) => pairScore(a1, a2, vid, tol)).filter(s => s !== null);
+      scores = allPairs.map(([a1, a2]) => pairF1(a1, a2, vid, tol)).filter(s => s !== null);
     } else {
       const [a1, a2] = selectedPair.split('|');
-      const s = pairScore(a1, a2, vid, tol);
+      const s = pairF1(a1, a2, vid, tol);
       if (s !== null) scores = [s];
     }
     if (!scores.length) return `<div class="agreement-card"><div class="vid-id">${vid}</div><div style="font-size:11px;color:#aaa">데이터 없음</div></div>`;
@@ -466,7 +525,7 @@ function renderAgreement() {
 
 // ── Boundary per video ──
 function renderBoundaryPerVideo() {
-  const vidIds = videoList.map(v => v.video_id);
+  const vidIds = getFilteredVideoList().map(v => v.video_id);
   if (charts.boundaryPerVideo) charts.boundaryPerVideo.destroy();
   charts.boundaryPerVideo = new Chart(document.getElementById('chartBoundaryPerVideo'), {
     type: 'bar',
@@ -494,6 +553,13 @@ function buildSelects() {
   pairSel.innerHTML = '<option value="all">전체 평균</option>' +
     getAllPairs().map(([a1, a2]) => `<option value="${a1}|${a2}">${a1} × ${a2}</option>`).join('');
 
+  // Base video filter
+  const baseIds = [...new Set(videoList.map(v => baseId(v.video_id)))].sort();
+  const baseFilterSel = document.getElementById('baseVideoFilter');
+  baseFilterSel.innerHTML = '<option value="all">전체</option>' +
+    baseIds.map(b => `<option value="${b}">${b}</option>`).join('');
+  document.getElementById('baseVideoFilterInfo').textContent = `전체 ${videoList.length}개 클립`;
+
   const vidOpts = videoList.map(v => `<option value="${v.video_id}">${v.video_id}</option>`).join('');
   document.getElementById('timelineVideo').innerHTML = vidOpts;
   document.getElementById('gtVideo').innerHTML = vidOpts;
@@ -507,7 +573,7 @@ function buildSelects() {
 // ── Category by video ──
 function renderCatByVideo() {
   const aid = document.getElementById('catVideoAnnotator').value;
-  const vidIds = videoList.map(v => v.video_id);
+  const vidIds = getFilteredVideoList().map(v => v.video_id);
   const filtered = aid === 'all' ? allAnns : allAnns.filter(a => a.annotator_id === aid);
   if (charts.catByVideo) charts.catByVideo.destroy();
   const canvas = document.getElementById('chartCatByVideo');
@@ -560,22 +626,32 @@ function renderGT() {
   const seg = videoList.find(v => v.video_id === vid);
   if (!seg) { container.innerHTML = '<div class="empty-msg">영상 정보 없음</div>'; return; }
 
-  // Build GT boundaries
-  const gtBounds = computeGT(vid, tol, minAgree);
+  // Auto-exclude lowest consistency annotator
+  const consistency = computeConsistency(tol);
+  const excluded = consistency.length ? consistency[consistency.length - 1].annotator_id : null;
+  const activeAnnotators = excluded ? annotators.filter(a => a !== excluded) : annotators;
+
+  // Build GT boundaries using only active annotators
+  const gtBounds = computeGT(vid, tol, minAgree, activeAnnotators);
 
   // Legend
   const legend = document.getElementById('gtLegend');
-  legend.innerHTML = annotators.map((aid, i) =>
-    `<div class="gt-legend-item"><div class="gt-legend-dot" style="background:${ANNOTATOR_COLORS[i % ANNOTATOR_COLORS.length]}"></div><span>${aid}</span></div>`
-  ).join('') +
+  legend.innerHTML = annotators.map((aid, i) => {
+    const isExcluded = aid === excluded;
+    return `<div class="gt-legend-item" style="${isExcluded ? 'opacity:0.4;' : ''}">` +
+      `<div class="gt-legend-dot" style="background:${ANNOTATOR_COLORS[i % ANNOTATOR_COLORS.length]}"></div>` +
+      `<span>${aid}${isExcluded ? ' <em style="font-size:0.75em;color:#e74c3c;">(제외됨)</em>' : ''}</span>` +
+      `</div>`;
+  }).join('') +
   `<div class="gt-legend-item"><div class="gt-legend-dot" style="background:#1a1a2e;border-radius:2px;width:12px;height:4px;"></div><span>GT (≥${minAgree}명 동의)</span></div>`;
 
-  container.innerHTML = buildTimelineSVG(vid, seg, annotators, true, tol, minAgree, gtBounds);
+  container.innerHTML = buildTimelineSVG(vid, seg, activeAnnotators, true, tol, minAgree, gtBounds);
 }
 
-function computeGT(vid, tol, minAgree) {
-  // Collect all non-start boundaries from all annotators
-  const allBounds = allAnns.filter(a => a.video_id === vid && a.time > 0);
+function computeGT(vid, tol, minAgree, activeAnnotators) {
+  const annSet = activeAnnotators ? new Set(activeAnnotators) : null;
+  // Collect all non-start boundaries from active annotators
+  const allBounds = allAnns.filter(a => a.video_id === vid && a.time > 0 && (!annSet || annSet.has(a.annotator_id)));
   if (!allBounds.length) return [];
 
   // Sort by time
@@ -616,15 +692,24 @@ function exportGT() {
   const tol = Number(document.getElementById('gtTolerance').value);
   const minAgree = Number(document.getElementById('gtMinAgree').value);
 
+  const consistency = computeConsistency(tol);
+  const excluded = consistency.length ? consistency[consistency.length - 1].annotator_id : null;
+  const activeAnnotators = excluded ? annotators.filter(a => a !== excluded) : annotators;
+
+  const meta = {
+    tolerance_sec: tol,
+    min_agreement: minAgree,
+    active_annotators: activeAnnotators,
+    excluded_annotator: excluded || null
+  };
+
   const result = videoList.map(v => {
-    const bounds = computeGT(v.video_id, tol, minAgree);
+    const bounds = computeGT(v.video_id, tol, minAgree, activeAnnotators);
     return {
       video_id: v.video_id,
       youtube_id: v.youtube_id,
       start: v.start,
       end: v.end,
-      tolerance_sec: tol,
-      min_agreement: minAgree,
       gt_boundaries: bounds.map(b => ({
         time_sec: Math.round(b.time * 1000) / 1000,
         category: b.category,
@@ -633,7 +718,7 @@ function exportGT() {
     };
   });
 
-  const json = JSON.stringify(result, null, 2);
+  const json = JSON.stringify({ meta, videos: result }, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
