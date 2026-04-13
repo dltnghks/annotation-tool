@@ -284,13 +284,20 @@ header span { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', mon
             <option value="auto" selected>자동 (일관성 최저)</option>
             <option value="manual">수동 선택</option>
           </select>
-          <select id="gtExcludeManual" onchange="renderGT()" style="display:none;">
+          <select id="gtExcludeManual" onchange="renderGT(); renderGTPerClip();" style="display:none;">
             <option value="">— 선택 —</option>
           </select>
         </div>
         <div class="gt-legend" id="gtLegend"></div>
         <div class="timeline-wrap">
           <div id="gtSvg" class="timeline-svg-wrap"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">클립별 GT 경계 수 <span>(현재 설정 기준)</span></div>
+        <div style="overflow-x:auto;">
+          <canvas id="chartGTPerClip"></canvas>
         </div>
       </div>
 
@@ -346,6 +353,7 @@ function onBaseVideoFilterChange() {
   renderBoundarySection();
   renderTimeline();
   renderGT();
+  renderGTPerClip();
 }
 
 // ── Load ──
@@ -393,6 +401,7 @@ function buildUI() {
   renderCatPieVideo();
   renderTimeline();
   renderGT();
+  renderGTPerClip();
 }
 
 // ── Tab ──
@@ -777,17 +786,17 @@ function renderTimeline() {
 function onGTTolChange() {
   const v = document.getElementById('gtTolerance').value;
   document.getElementById('gtTolVal').textContent = '±' + v + 's';
-  renderGT();
+  renderGT(); renderGTPerClip();
 }
 function onGTMinChange() {
   const v = document.getElementById('gtMinAgree').value;
   document.getElementById('gtMinVal').textContent = v + '명';
-  renderGT();
+  renderGT(); renderGTPerClip();
 }
 function onGTExcludeModeChange() {
   const mode = document.getElementById('gtExcludeMode').value;
   document.getElementById('gtExcludeManual').style.display = mode === 'manual' ? '' : 'none';
-  renderGT();
+  renderGT(); renderGTPerClip();
 }
 
 function getGTExcluded(tol) {
@@ -828,6 +837,38 @@ function renderGT() {
   `<div class="gt-legend-item"><div class="gt-legend-dot" style="background:#1a1a2e;border-radius:2px;width:12px;height:4px;"></div><span>GT (≥${minAgree}명 동의)</span></div>`;
 
   container.innerHTML = buildTimelineSVG(vid, seg, activeAnnotators, true, tol, minAgree, gtBounds);
+}
+
+function renderGTPerClip() {
+  const tol = Number(document.getElementById('gtTolerance').value);
+  const minAgree = Number(document.getElementById('gtMinAgree').value);
+  const excluded = getGTExcluded(tol);
+  const activeAnnotators = excluded ? annotators.filter(a => a !== excluded) : annotators;
+  const clips = getFilteredVideoList();
+  const canvas = document.getElementById('chartGTPerClip');
+  const w = Math.max(600, clips.length * 44);
+  canvas.width = w; canvas.height = 260;
+  canvas.style.width = w + 'px'; canvas.style.height = '260px';
+  if (charts.gtPerClip) charts.gtPerClip.destroy();
+  charts.gtPerClip = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: clips.map(v => v.video_id),
+      datasets: [{
+        label: 'GT 경계 수',
+        data: clips.map(v => computeGT(v.video_id, tol, minAgree, activeAnnotators).length),
+        backgroundColor: '#1a1a2e'
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+      },
+      responsive: false, maintainAspectRatio: false
+    }
+  });
 }
 
 function computeGT(vid, tol, minAgree, activeAnnotators) {
