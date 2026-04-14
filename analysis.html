@@ -301,6 +301,15 @@ header span { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', mon
         </div>
       </div>
 
+      <div class="section">
+        <div class="section-title">Raw 데이터 CSV 추출</div>
+        <div class="controls" style="flex-wrap:wrap;gap:8px;align-items:center;">
+          <label style="font-weight:600;">어노테이터 선택:</label>
+          <div id="rawCsvAnnotatorChecks" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;"></div>
+          <button onclick="exportRawCSV()" style="padding:6px 14px;background:#1a1a2e;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:4px;">CSV 다운로드</button>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -707,6 +716,14 @@ function buildSelects() {
   document.getElementById('gtExcludeManual').innerHTML =
     '<option value="">— 선택 —</option>' +
     annotators.map(a => `<option value="${a}">${a}</option>`).join('');
+
+  // Raw CSV annotator checkboxes
+  const checksDiv = document.getElementById('rawCsvAnnotatorChecks');
+  checksDiv.innerHTML = annotators.map(a =>
+    `<label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
+      <input type="checkbox" value="${a}" checked style="cursor:pointer;"> ${a}
+    </label>`
+  ).join('');
 }
 
 // keep alias for onBaseVideoFilterChange
@@ -943,6 +960,28 @@ function exportGT() {
   const a = document.createElement('a');
   a.href = url;
   a.download = `gt_tol${tol}s_min${minAgree}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportRawCSV() {
+  const checks = document.querySelectorAll('#rawCsvAnnotatorChecks input[type=checkbox]');
+  const selected = new Set([...checks].filter(c => c.checked).map(c => c.value));
+  if (selected.size === 0) { alert('어노테이터를 한 명 이상 선택하세요.'); return; }
+
+  const rows = allAnns.filter(a => selected.has(a.annotator_id));
+  const header = ['video_id', 'annotator_id', 'time_sec', 'category', 'note'];
+  const lines = [header.join(',')];
+  for (const r of rows) {
+    const cells = [r.video_id, r.annotator_id, r.time, r.category, '"' + (r.note || '').replace(/"/g, '""') + '"'];
+    lines.push(cells.join(','));
+  }
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `annotations_${[...selected].join('_')}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
