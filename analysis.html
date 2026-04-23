@@ -199,6 +199,7 @@ header span { font-size: 12px; color: #94a3b8; font-family: 'IBM Plex Mono', mon
         <div style="overflow-x:auto;">
           <table class="summary-table" id="videoSummaryTable">
             <thead><tr>
+              <th>Game</th>
               <th>Video ID</th>
               <th class="num">클립 수</th>
               <th class="num">총 경계 수</th>
@@ -325,7 +326,16 @@ const CAT_COLOR = {
 const CATS = ['Exploration', 'Combat', 'Narrative', 'Menu/UI', 'Other'];
 const ANNOTATOR_COLORS = ['#2563eb', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
-let videoList = [], allAnns = [], annotators = [], charts = {};
+let videoList = [], allAnns = [], annotators = [], charts = {}, gameMap = {};
+
+// gameMap: {base_video_id: "Game Name"}
+function gameName(vid) {
+  return gameMap[baseId(vid)] || gameMap[vid] || baseId(vid);
+}
+function clipLabel(vid) {
+  const game = gameMap[baseId(vid)] || gameMap[vid];
+  return game ? `${game} · ${vid}` : vid;
+}
 
 function parseTimeValue(val) {
   if (val === '' || val == null) return 0;
@@ -356,7 +366,7 @@ function onBaseVideoFilterChange() {
   const base = document.getElementById('baseVideoFilter').value;
   document.getElementById('baseVideoFilterInfo').textContent =
     base === 'all' ? `전체 ${videoList.length}개 클립` : `${filtered.length}개 클립`;
-  const vidOpts = filtered.map(v => `<option value="${v.video_id}">${v.video_id}</option>`).join('');
+  const vidOpts = filtered.map(v => `<option value="${v.video_id}">${clipLabel(v.video_id)}</option>`).join('');
   document.getElementById('timelineVideo').innerHTML = vidOpts;
   document.getElementById('gtVideo').innerHTML = vidOpts;
   renderBoundarySection();
@@ -370,14 +380,20 @@ async function loadData() {
   const status = document.getElementById('loadStatus');
   status.textContent = '불러오는 중...';
   try {
-    const [segRes, annRes] = await Promise.all([
+    const [segRes, annRes, gameRes] = await Promise.all([
       fetch(WEBAPP_URL + '?action=getSegments&token=' + SECRET_TOKEN),
-      fetch(WEBAPP_URL + '?action=getAnnotations&token=' + SECRET_TOKEN)
+      fetch(WEBAPP_URL + '?action=getAnnotations&token=' + SECRET_TOKEN),
+      fetch(WEBAPP_URL + '?action=getGame&token=' + SECRET_TOKEN)
     ]);
     const segData = await segRes.json();
     const annData = await annRes.json();
+    const gameData = await gameRes.json();
     if (segData.status !== 'ok') throw new Error(segData.message);
     if (annData.status !== 'ok') throw new Error(annData.message);
+    if (gameData.status === 'ok') {
+      gameMap = {};
+      gameData.data.forEach(r => { gameMap[String(r.video_id)] = r.game; });
+    }
 
     videoList = segData.data.map(v => ({ ...v, start: parseTimeValue(v.start), end: parseTimeValue(v.end) }));
     allAnns = annData.data.map(r => ({
@@ -588,7 +604,7 @@ function renderAgreement() {
     const pct = Math.round(score * 100);
     const color = pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444';
     return `<div class="agreement-card">
-      <div class="vid-id">${vid}</div>
+      <div class="vid-id">${clipLabel(vid)}</div>
       <div class="agreement-score">
         <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${pct}%;background:${color}"></div></div>
         <div class="score-val" style="color:${color}">${pct}%</div>
@@ -626,6 +642,7 @@ function renderVideoSummary() {
       : '<span style="color:#94a3b8;">—</span>';
 
     return `<tr>
+      <td style="color:#1a1a2e;font-weight:600;">${gameMap[base] || '—'}</td>
       <td>${base}</td>
       <td class="num">${clips.length}</td>
       <td class="num">${totalBounds}</td>
@@ -669,7 +686,7 @@ function renderBoundaryByAnnotator() {
   charts.boundaryPerVideo = new Chart(canvas, {
     type: 'bar',
     data: {
-      labels: vidIds,
+      labels: vidIds.map(v => clipLabel(v)),
       datasets: annotators.map((aid, i) => ({
         label: aid,
         data: vidIds.map(vid => allAnns.filter(a => a.video_id === vid && a.annotator_id === aid && a.time > 0).length),
@@ -697,13 +714,13 @@ function buildSelects() {
   const baseIds = [...new Set(videoList.map(v => baseId(v.video_id)))].sort();
   const baseFilterSel = document.getElementById('baseVideoFilter');
   baseFilterSel.innerHTML = '<option value="all">전체</option>' +
-    baseIds.map(b => `<option value="${b}">${b}</option>`).join('');
+    baseIds.map(b => `<option value="${b}">${gameMap[b] ? gameMap[b] + ' · ' + b : b}</option>`).join('');
   document.getElementById('baseVideoFilterInfo').textContent = `전체 ${videoList.length}개 클립`;
 
-  const vidOpts = videoList.map(v => `<option value="${v.video_id}">${v.video_id}</option>`).join('');
+  const vidOpts = videoList.map(v => `<option value="${v.video_id}">${clipLabel(v.video_id)}</option>`).join('');
   document.getElementById('timelineVideo').innerHTML = vidOpts;
   document.getElementById('gtVideo').innerHTML = vidOpts;
-  document.getElementById('catPieVideo').innerHTML = baseIds.map(b => `<option value="${b}">${b}</option>`).join('');
+  document.getElementById('catPieVideo').innerHTML = baseIds.map(b => `<option value="${b}">${gameMap[b] ? gameMap[b] + ' · ' + b : b}</option>`).join('');
 
   document.getElementById('catPieAnnotator').innerHTML =
     '<option value="all">전체</option>' + annotators.map(a => `<option value="${a}">${a}</option>`).join('');
@@ -741,7 +758,7 @@ function renderBoundaryByCategory() {
   charts.boundaryPerVideo = new Chart(canvas, {
     type: 'bar',
     data: {
-      labels: vidIds,
+      labels: vidIds.map(v => clipLabel(v)),
       datasets: CATS.map(cat => ({
         label: cat,
         data: vidIds.map(vid => filtered.filter(a => a.video_id === vid && a.category === cat).length),
@@ -870,7 +887,7 @@ function renderGTPerClip() {
   charts.gtPerClip = new Chart(canvas, {
     type: 'bar',
     data: {
-      labels: clips.map(v => v.video_id),
+      labels: clips.map(v => clipLabel(v.video_id)),
       datasets: [{
         label: 'GT 경계 수',
         data: clips.map(v => computeGT(v.video_id, tol, minAgree, activeAnnotators).length),
