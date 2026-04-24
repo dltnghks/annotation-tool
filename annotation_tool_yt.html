@@ -279,6 +279,10 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
       <!-- 카테고리 기준 -->
       <div class="qs-section-title">카테고리 선택 기준</div>
       <p style="font-size:12px;color:#666;margin-bottom:8px;">경계 이후 시작되는 구간의 성격을 선택합니다.</p>
+      <div class="qs-tip" style="background:#f0f4f8;border-color:#93c5fd;color:#1e3a5f;margin-bottom:8px;">
+        <strong>동일한 카테고리 내에서도</strong> 게임 상태가 의미 있게 변화했다고 판단되면 마크를 진행해 주세요.<br>
+        예: 탐색 중 새로운 지역으로 전환, 전투 중 보스 페이즈 변경 등
+      </div>
       <div class="qs-tags">
         <div class="qs-tag-card" style="border-color:#6366f1;">
           <div class="tag-name" style="color:#6366f1;">Exploration</div>
@@ -429,6 +433,7 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
         <div class="pending-label">경계 시점: <span id="pendingTime" class="pending-time"></span></div>
         <div class="pending-field">
           <label>이후 구간 카테고리</label>
+          <div style="font-size:11px;color:#92400e;margin-bottom:5px;line-height:1.5;">동일한 카테고리 내에서도 게임 상태가 변화했다고 판단되면 마크를 진행해 주세요.</div>
           <select id="pendingCategory" class="pending-select">
             <option value="">-- 선택 --</option>
             <option value="Exploration">Exploration</option>
@@ -508,6 +513,9 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
 
         <!-- 카테고리 기준 -->
         <div class="qs-section-title">카테고리 선택 (경계 이후 구간)</div>
+        <div style="font-size:11px;background:#f0f4f8;border:1px solid #93c5fd;border-radius:6px;padding:6px 10px;color:#1e3a5f;margin-bottom:7px;line-height:1.5;">
+          <strong>동일한 카테고리 내에서도</strong> 게임 상태가 의미 있게 변화했다고 판단되면 마크해 주세요.
+        </div>
         <div class="qs-tags" style="flex-wrap:wrap;">
           <div class="qs-tag-card" style="border-color:#6366f1;min-width:80px;">
             <div class="tag-name" style="color:#6366f1;font-size:12px;">Exploration</div>
