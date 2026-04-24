@@ -60,6 +60,14 @@ h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; text-align: cen
 .player-left { flex: 0 0 62%; min-width: 0; }
 .player-right { flex: 1; min-width: 0; }
 
+/* Video tabs */
+.video-tabs { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+.video-tab { padding: 5px 14px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer; font-size: 12px; font-weight: 500; font-family: inherit; transition: background 0.15s, color 0.15s; }
+.video-tab:hover { background: #e8e8e8; }
+.video-tab.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+.video-tab.tab-done { border-color: #059669; color: #065f46; }
+.video-tab.tab-done.active { background: #059669; border-color: #059669; color: #fff; }
+
 /* Video index bar */
 .video-index-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
 .vid-idx-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer; font-size: 11px; font-weight: 600; font-family: inherit; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
@@ -370,7 +378,9 @@ kbd { font-size: 11px; color: #888; margin-left: 4px; font-family: 'IBM Plex Mon
 
     <!-- ── LEFT: Video + playback controls ── -->
     <div class="player-left">
-      <!-- 비디오 인덱스 바 -->
+      <!-- 게임별 탭 -->
+      <div id="videoTabs" class="video-tabs"></div>
+      <!-- 클립 인덱스 바 (현재 탭의 클립만 표시) -->
       <div id="videoIndexBar" class="video-index-bar"></div>
 
       <div id="videoNav" class="video-nav">
@@ -576,7 +586,9 @@ const CAT_COLOR = {
 };
 
 let videoList = [];
+let videoGroups = []; // [{youtubeId, label, indices: [globalIdx, ...]}]
 let currentIdx = 0;
+let currentGroupIdx = 0;
 let allAnnotations = {};
 let pendingTime = null;
 let sheetQueue = Promise.resolve();
@@ -691,18 +703,64 @@ async function sheetDelete(ann, vid) {
   }
 }
 
+function buildVideoGroups() {
+  const seen = new Map();
+  videoGroups = [];
+  videoList.forEach((v, i) => {
+    const key = v.youtube_id;
+    const label = v.game_name || key;
+    if (!seen.has(key)) {
+      seen.set(key, videoGroups.length);
+      videoGroups.push({ youtubeId: key, label, indices: [] });
+    }
+    videoGroups[seen.get(key)].indices.push(i);
+  });
+}
+
+function getGroupForIdx(idx) {
+  return videoGroups.findIndex(g => g.indices.includes(idx));
+}
+
+function renderTabs() {
+  const tabsEl = document.getElementById('videoTabs');
+  if (!tabsEl || !videoGroups.length) return;
+  tabsEl.innerHTML = videoGroups.map((g, gi) => {
+    const allDone = g.indices.every(i => {
+      const anns = allAnnotations[videoList[i].video_id] || [];
+      return anns.length > 0 && !anns.some(a => a.time === 0 && !a.category);
+    });
+    const cls = ['video-tab',
+      gi === currentGroupIdx ? 'active' : '',
+      allDone ? 'tab-done' : ''
+    ].filter(Boolean).join(' ');
+    const doneCount = g.indices.filter(i => {
+      const anns = allAnnotations[videoList[i].video_id] || [];
+      return anns.length > 0 && !anns.some(a => a.time === 0 && !a.category);
+    }).length;
+    return `<button class="${cls}" onclick="switchTab(${gi})">${g.label} <span style="font-size:10px;opacity:0.7">${doneCount}/${g.indices.length}</span></button>`;
+  }).join('');
+}
+
+function switchTab(gi) {
+  currentGroupIdx = gi;
+  renderTabs();
+  renderIndexBar();
+}
+
 function renderIndexBar() {
   const bar = document.getElementById('videoIndexBar');
-  if (!bar || !videoList.length) return;
-  bar.innerHTML = videoList.map((v, i) => {
+  if (!bar || !videoGroups.length) return;
+  const group = videoGroups[currentGroupIdx];
+  bar.innerHTML = group.indices.map((globalIdx, localPos) => {
+    const v = videoList[globalIdx];
     const anns = allAnnotations[v.video_id] || [];
     const visited = anns.length > 0;
     const startCatMissing = visited && anns.some(a => a.time === 0 && !a.category);
     const cls = ['vid-idx-btn',
       startCatMissing ? 'no-cat' : (visited ? 'done' : ''),
-      i === currentIdx ? 'current' : ''
+      globalIdx === currentIdx ? 'current' : ''
     ].filter(Boolean).join(' ');
-    return `<button class="${cls}" onclick="loadVideo(${i})" title="${v.video_id}">${i + 1}</button>`;
+    return `<button class="${cls}" onclick="loadVideo(${globalIdx})" title="${v.video_id}">${localPos + 1}</button>`;
   }).join('');
 }
 
@@ -751,6 +809,8 @@ async function startSession() {
     document.getElementById('annotatorIdPlayer').value = aid;
     document.getElementById('preload').classList.add('hidden');
     document.getElementById('player').classList.remove('hidden');
+
+    buildVideoGroups();
 
     // 4. 미완료 영상부터 시작 (0초 마크 카테고리 없는 영상 우선)
     const firstIdx = videoList.findIndex(v => {
@@ -1059,6 +1119,7 @@ function renderAnnotations() {
   const list = document.getElementById('annList');
   const count = document.getElementById('annCount');
   count.textContent = anns.length;
+  renderTabs();
   renderIndexBar();
 
   if (anns.length === 0) {
@@ -1138,6 +1199,9 @@ function loadVideo(idx) {
   }).length;
   document.getElementById('navProgress').textContent = done + '/' + videoList.length + ' 완료';
 
+  const gi = getGroupForIdx(idx);
+  if (gi >= 0) currentGroupIdx = gi;
+  renderTabs();
   renderIndexBar();
 
   rateIdx = 3;
